@@ -56,16 +56,28 @@ Abilities define what AI can do with a service. Users toggle these per account�
 |-------|----------|-------------|
 | `id` | Yes | Unique identifier (e.g., `read_tasks`) |
 | `label` | Yes | Human-readable name shown in UI |
-| `endpoints` | No | API endpoints this ability allows (for proxy enforcement) |
-| `destructive` | No | If `true`, disabled by default and requires explicit opt-in |
+| `read_only` | No | If `true`, this is a safe read-only ability (default: `false`) |
+| `destructive` | No | If `true`, requires explicit opt-in—never auto-enabled (default: `false`) |
+
+**Default access levels** (configurable in Settings):
+- **Read only** — Auto-enable abilities with `read_only: true`
+- **Full access** — Auto-enable all abilities except `destructive: true`
 
 **Example abilities for Todoist:**
-- `read_tasks` — "Read your tasks"
-- `write_tasks` — "Create and modify tasks"  
-- `delete_tasks` — "Delete tasks" (destructive)
-- `manage_projects` — "Manage projects"
+```yaml
+abilities:
+  - id: read_tasks
+    label: "Read your tasks"
+    read_only: true           # Safe, enabled with "read only" default
+  - id: write_tasks
+    label: "Create and modify tasks"
+                              # No read_only = write ability
+  - id: delete_tasks
+    label: "Delete tasks"
+    destructive: true         # Never auto-enabled
+```
 
-Users can have different abilities per account (e.g., Personal has read+write, Work has read-only).
+Users can have different abilities per account (e.g., Personal has full access, Work is read-only).
 
 ## Available Skills
 

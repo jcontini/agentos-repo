@@ -10,16 +10,11 @@ color: "#5E6AD2"
 abilities:
   - id: read_issues
     label: "Read issues and projects"
-    endpoints:
-      - "POST /graphql"  # GraphQL queries (read operations)
+    read_only: true
   - id: write_issues
     label: "Create and update issues"
-    endpoints:
-      - "POST /graphql"  # GraphQL mutations (write operations)
   - id: add_comments
     label: "Add comments"
-    endpoints:
-      - "POST /graphql"  # GraphQL mutations (comments)
 
 auth:
   type: api_key
