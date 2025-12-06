@@ -17,6 +17,24 @@ id: todoist
 name: Todoist
 description: Personal task management
 category: productivity
+
+abilities:
+  - id: read_tasks
+    label: "Read your tasks"
+    endpoints:
+      - "GET /rest/v2/tasks"
+      - "GET /rest/v2/tasks/*"
+  - id: write_tasks
+    label: "Create and modify tasks"
+    endpoints:
+      - "POST /rest/v2/tasks"
+      - "POST /rest/v2/tasks/*"
+  - id: delete_tasks
+    label: "Delete tasks"
+    destructive: true
+    endpoints:
+      - "DELETE /rest/v2/tasks/*"
+
 auth:
   type: api_key
   header: Authorization
@@ -29,6 +47,25 @@ api:
 
 API documentation here...
 ```
+
+## Abilities
+
+Abilities define what AI can do with a service. Users toggle these per account—like macOS app permissions.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | Yes | Unique identifier (e.g., `read_tasks`) |
+| `label` | Yes | Human-readable name shown in UI |
+| `endpoints` | No | API endpoints this ability allows (for proxy enforcement) |
+| `destructive` | No | If `true`, disabled by default and requires explicit opt-in |
+
+**Example abilities for Todoist:**
+- `read_tasks` — "Read your tasks"
+- `write_tasks` — "Create and modify tasks"  
+- `delete_tasks` — "Delete tasks" (destructive)
+- `manage_projects` — "Manage projects"
+
+Users can have different abilities per account (e.g., Personal has read+write, Work has read-only).
 
 ## Available Skills
 
