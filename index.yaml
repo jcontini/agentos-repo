@@ -1,0 +1,39 @@
+# Passport Skills Registry
+# Lists all available skills with metadata for the Browse UI
+# Each skill has a corresponding {id}.md file in the skills/ directory
+
+version: 1
+
+skills:
+  - id: todoist
+    name: Todoist
+    description: Personal task management
+    category: productivity
+    icon: https://cdn.simpleicons.org/todoist
+    color: "#e44332"
+    updated_at: "2025-01-15"
+    
+  - id: linear
+    name: Linear
+    description: Issue tracking and project management
+    category: productivity
+    icon: https://cdn.simpleicons.org/linear
+    color: "#5E6AD2"
+    updated_at: "2025-01-15"
+    
+  - id: exa
+    name: Exa
+    description: Semantic web search
+    category: search
+    icon: https://cdn.simpleicons.org/exa
+    color: "#5046E5"
+    updated_at: "2025-01-15"
+    
+  - id: raindrop
+    name: Raindrop
+    description: Bookmark management
+    category: productivity
+    icon: https://cdn.simpleicons.org/raindrop
+    color: "#0082FF"
+    updated_at: "2025-01-15"
+
