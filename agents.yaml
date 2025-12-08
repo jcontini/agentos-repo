@@ -1,95 +1,10 @@
-# agentOS Skills Registry
-# Skills = Apps/services that agentOS connects to
+# agentOS Agents Registry
 # Agents = AI clients that use agentOS's MCP server
+# 
+# Skills are discovered by scanning skills/*/skill.md (no registry needed)
 
 version: 1
 
-# =============================================================================
-# SKILLS (Apps)
-# =============================================================================
-skills:
-  - id: todoist
-    name: Todoist
-    description: Personal task management - create, list, complete, update, delete tasks
-    category: productivity
-    icon: https://cdn.simpleicons.org/todoist
-    color: "#E44332"
-    docs: skills/todoist/skill.md
-    
-    credential:
-      type: api_key
-      label: API Token
-      help_url: https://app.todoist.com/app/settings/integrations/developer
-    
-  - id: linear
-    name: Linear
-    description: Issue tracking and project management
-    category: productivity
-    icon: https://cdn.simpleicons.org/linear
-    color: "#5E6AD2"
-    docs: skills/linear/skill.md
-    
-    credential:
-      type: api_key
-      label: API Key
-      help_url: https://linear.app/settings/api
-    
-    api:
-      type: graphql
-      base_url: https://api.linear.app
-      auth_header: Authorization
-      auth_prefix: ""
-    
-  - id: exa
-    name: Exa
-    description: Semantic web search
-    category: search
-    icon: https://www.google.com/s2/favicons?domain=exa.ai&sz=64
-    color: "#5046E5"
-    docs: skills/exa/skill.md
-    
-    credential:
-      type: api_key
-      label: API Key
-      help_url: https://dashboard.exa.ai/api-keys
-    
-    api:
-      type: rest
-      base_url: https://api.exa.ai
-      auth_header: x-api-key
-      auth_prefix: ""
-    
-  - id: raindrop
-    name: Raindrop
-    description: Bookmark management
-    category: productivity
-    icon: https://raindrop.io/favicon.ico
-    color: "#0082FF"
-    docs: skills/raindrop/skill.md
-    
-    credential:
-      type: api_key
-      label: Test Token
-      help_url: https://app.raindrop.io/settings/integrations
-    
-    api:
-      type: rest
-      base_url: https://api.raindrop.io
-      auth_header: Authorization
-      auth_prefix: "Bearer "
-  
-  - id: youtube
-    name: YouTube
-    description: Get video transcripts and download videos using yt-dlp
-    category: search
-    icon: https://cdn.simpleicons.org/youtube
-    color: "#FF0000"
-    docs: skills/youtube/skill.md
-    local: true  # Uses local yt-dlp CLI - no credentials needed
-
-# =============================================================================
-# AGENTS (MCP Clients)
-# =============================================================================
 agents:
   # Chat Agents
   - id: claude
