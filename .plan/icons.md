@@ -2,13 +2,13 @@
 
 **Status:** 🟡 Planning  
 **Created:** 2024-12-07  
-**Goal:** Bundle all icons in this repo so Passport app makes zero external calls for icons.
+**Goal:** Bundle all icons in this repo so agentOS app makes zero external calls for icons.
 
 ---
 
 ## Context
 
-The Passport app needs to be **strictly offline-first** after build. Currently, icons are fetched from external sources:
+The agentOS app needs to be **strictly offline-first** after build. Currently, icons are fetched from external sources:
 
 **Current external icon sources:**
 - `https://cdn.simpleicons.org/todoist` — SimpleIcons CDN
@@ -17,14 +17,14 @@ The Passport app needs to be **strictly offline-first** after build. Currently, 
 
 **Problem:** These require internet access at runtime.
 
-**Solution:** Host icons in this repo, serve via GitHub raw URLs (which Passport already fetches for skill metadata).
+**Solution:** Host icons in this repo, serve via GitHub raw URLs (which agentOS already fetches for skill metadata).
 
 ---
 
 ## Proposed Structure
 
 ```
-passport-skills/
+agentos-skills/
 ├── index.yaml              # Updated to reference local icons
 ├── icons/
 │   ├── skills/             # App/service icons
@@ -113,9 +113,9 @@ passport-skills/
   icon: icons/skills/todoist.svg
 ```
 
-**Note:** Passport will construct the full GitHub raw URL:
+**Note:** agentOS will construct the full GitHub raw URL:
 ```
-https://raw.githubusercontent.com/jcontini/passport-skills/main/icons/skills/todoist.svg
+https://raw.githubusercontent.com/jcontini/agentos-skills/main/icons/skills/todoist.svg
 ```
 
 ---
@@ -126,14 +126,14 @@ https://raw.githubusercontent.com/jcontini/passport-skills/main/icons/skills/tod
 2. [ ] Download/create icons for each skill (4 skills currently)
 3. [ ] Download/create icons for each agent (11 agents currently)
 4. [ ] Update `index.yaml` to use relative paths
-5. [ ] Update Passport's skill fetching logic to construct full URLs
+5. [ ] Update agentOS's skill fetching logic to construct full URLs
 6. [ ] Test offline by disabling network after initial fetch
 
 ---
 
-## Passport App Changes Required
+## agentOS App Changes Required
 
-In `passport/src-tauri/src/skills.rs` (or wherever icons are resolved):
+In `agentos/src-tauri/src/skills.rs` (or wherever icons are resolved):
 
 ```rust
 // Current: icon URL used directly
@@ -154,9 +154,9 @@ fn resolve_icon_url(icon: &str, skills_source: &str) -> String {
 
 ## Caching Strategy
 
-Once icons are hosted here, Passport can:
+Once icons are hosted here, agentOS can:
 1. **First launch:** Fetch icons from GitHub (requires internet)
-2. **Cache locally:** Store in `~/.passport/cache/icons/`
+2. **Cache locally:** Store in `~/.agentos/cache/icons/`
 3. **Subsequent launches:** Use cached icons (fully offline)
 
 This is a **future enhancement** — for now, icons are fetched each time but from our controlled source.
@@ -165,8 +165,8 @@ This is a **future enhancement** — for now, icons are fetched each time but fr
 
 ## Related Plans
 
-- **Passport UI refactor:** `passport/.plan/svelte-refactor.md`
-- **This plan:** `passport-skills/.plan/icons.md`
+- **agentOS UI refactor:** `agentos/.plan/svelte-refactor.md`
+- **This plan:** `agentos-skills/.plan/icons.md`
 
 
 

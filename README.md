@@ -1,6 +1,6 @@
-# Passport Skills
+# agentOS Skills
 
-Open-source skill definitions for [Passport](https://github.com/jcontini/passport).
+Open-source skill definitions for [agentOS](https://github.com/jcontini/agentos).
 
 Skills teach AI agents how to use your connected apps — they're markdown files with API documentation and configuration.
 
@@ -35,12 +35,12 @@ API documentation here...
 
 ## Permissions: See + Do
 
-Passport uses a simple two-level permission model per account:
+agentOS uses a simple two-level permission model per account:
 
 | Permission | Description | MCP Tool |
 |------------|-------------|----------|
-| **See** | Read data (always enabled if account exists) | `passport_see` |
-| **Do** | Create, modify, delete data (user toggles this) | `passport_do` |
+| **See** | Read data (always enabled if account exists) | `agentos_see` |
+| **Do** | Create, modify, delete data (user toggles this) | `agentos_do` |
 
 **Enforcement is based on API type:**
 - **REST** (`type: rest`) — GET = See, POST/PUT/PATCH/DELETE = Do
@@ -64,9 +64,9 @@ Users can have different permissions per account (e.g., Personal has Do enabled,
 
 ## Using Skills
 
-Skills are fetched by the Passport app when you browse and install them.
+Skills are fetched by the agentOS app when you browse and install them.
 
-1. Open Passport → Apps tab
+1. Open agentOS → Apps tab
 2. Browse available skills
 3. Click "Install" on any skill
 4. Connect your account (API key)

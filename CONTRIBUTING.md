@@ -38,7 +38,7 @@ api:
 
 ## Quick Start
 
-Show a simple curl example using the Passport proxy:
+Show a simple curl example using the agentOS proxy:
 
 \```bash
 curl -s http://localhost:1111/cloud/service-name/endpoint | jq .

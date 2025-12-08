@@ -1,6 +1,6 @@
-# Passport Skills Registry
-# Skills = Apps/services that Passport connects to
-# Agents = AI clients that use Passport's MCP server
+# agentOS Skills Registry
+# Skills = Apps/services that agentOS connects to
+# Agents = AI clients that use agentOS's MCP server
 
 version: 1
 
