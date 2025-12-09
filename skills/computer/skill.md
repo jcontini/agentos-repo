@@ -1,6 +1,6 @@
 ---
 id: computer
-name: Computer
+name: macOS Control
 description: Open apps, URLs, and save files on your Mac
 category: productivity
 icon: https://cdn.simpleicons.org/apple
@@ -65,7 +65,7 @@ actions:
     run: open -R "$PARAM_PATH"
 ---
 
-# Computer
+# macOS Control
 
 Control your Mac through agentOS. Open apps, URLs, and save files.
 
@@ -161,4 +161,3 @@ params: {path: "~/Downloads"}
 - **Maps preference**: Ask the user "Apple Maps or Google Maps?" and use the appropriate URL
 - **App names with spaces**: Quote them in params, e.g., `"Google Chrome"`
 - **System defaults**: URLs automatically open in the user's default browser (set in System Settings)
-

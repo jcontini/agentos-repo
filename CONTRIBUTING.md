@@ -5,49 +5,162 @@ Thanks for contributing! Here's how to add a new skill.
 ## Quick Start
 
 1. Fork this repo
-2. Create `skills/{service-name}.md`
-3. Add entry to `index.yaml`
-4. Submit a PR
+2. Create `skills/{service-name}/skill.md` (note: directory + file, not just file)
+3. Write your skill with YAML frontmatter + markdown instructions
+4. Test your skill locally (see Tips below)
+5. Submit a PR
+
+**Note:** The `index.yaml` file is auto-generated from skill frontmatter. You don't need to edit it manually.
 
 ## Skill File Structure
 
+Skills use one of two protocols: **shell** (local commands) or **rest/graphql** (cloud APIs).
+
+### Shell Protocol Example
+
 ```markdown
 ---
-id: service-name
-name: Service Name
-description: One-line description
-category: productivity  # productivity, communication, search, code, finance
+id: youtube
+name: YouTube
+description: Get video transcripts and download videos
+category: media
+icon: https://cdn.simpleicons.org/youtube
+color: "#FF0000"
+protocol: shell
 
-icon: https://cdn.simpleicons.org/servicename
-color: "#hexcolor"
+requires:
+  - yt-dlp
 
 auth:
-  type: api_key          # api_key, oauth, local, cli
-  header: Authorization  # Header name for API key
-  prefix: "Bearer "      # Prefix before key (optional)
-  help_url: https://...  # Where to get API key
+  type: local  # or api_key if API key needed
 
-api:
-  type: rest             # rest, graphql, sqlite, local
-  base_url: https://api.service.com
+actions:
+  transcribe:
+    description: Get transcript text from a YouTube video
+    params:
+      url:
+        type: string
+        required: true
+        description: YouTube video URL
+      lang:
+        type: string
+        default: en
+        description: Subtitle language code
+    run: |
+      yt-dlp --skip-download --write-auto-sub \
+        --sub-lang "$PARAM_LANG" "$PARAM_URL"
+
+  download:
+    description: Download video file
+    params:
+      url:
+        type: string
+        required: true
+        description: YouTube video URL
+    run: |
+      OUTPUT_DIR="${AGENTOS_DOWNLOADS:-$HOME/Downloads}"
+      yt-dlp -o "$OUTPUT_DIR/%(title)s.%(ext)s" "$PARAM_URL"
 ---
 
-# Service Name
+# YouTube
 
-**Use for:** Brief description of use cases
+Instructions for using YouTube...
+```
+
+### REST Protocol Example
+
+```markdown
+---
+id: todoist
+name: Todoist
+description: Personal task management
+category: productivity
+icon: https://cdn.simpleicons.org/todoist
+color: "#E44332"
+protocol: rest
+
+auth:
+  type: api_key
+  header: Authorization
+  prefix: "Bearer "
+  help_url: https://todoist.com/app/settings/integrations
+
+api:
+  type: rest
+  base_url: https://api.todoist.com
+---
+
+# Todoist
+
+**Use for:** Managing personal tasks, projects, and labels
 
 ## Quick Start
 
-Show a simple curl example using the agentOS proxy:
-
-\```bash
-curl -s http://localhost:1111/cloud/service-name/endpoint | jq .
-\```
+List tasks:
+```bash
+curl -H "Authorization: Bearer $AUTH_TOKEN" \
+  https://api.todoist.com/rest/v2/tasks
+```
 
 ## API Reference
 
 Document the key endpoints and operations...
 ```
+
+## Protocols
+
+### shell
+For skills that execute local commands (CLI tools, scripts, etc.).
+
+**Required fields:**
+- `protocol: shell`
+- `actions` — Map of action definitions
+
+**Optional fields:**
+- `requires` — List of required binaries (e.g., `["yt-dlp", "curl"]`)
+- `auth` — Usually `type: local` or `type: api_key` if API key needed
+
+**Action structure:**
+```yaml
+actions:
+  action_name:
+    description: What this action does
+    params:
+      param_name:
+        type: string | integer | boolean
+        required: true | false
+        default: "default value"  # optional
+        description: "Parameter description"
+    run: |
+      # Shell script here
+      # Use $PARAM_* for parameters
+      # Use $AUTH_TOKEN for credentials (if auth configured)
+```
+
+**Environment variables in `run` scripts:**
+- `$AUTH_TOKEN` — Credential from agentOS
+- `$PARAM_*` — Parameters (uppercased)
+- `$AGENTOS_DOWNLOADS` — Downloads folder
+- `$AGENTOS_CACHE` — Cache folder
+
+### rest / graphql
+For cloud APIs that agentOS proxies.
+
+**Required fields:**
+- `protocol: rest` or `protocol: graphql`
+- `api` — API configuration
+- `auth` — Authentication configuration
+
+**API configuration:**
+```yaml
+api:
+  type: rest     # or graphql
+  base_url: https://api.service.com
+```
+
+**Permission enforcement:**
+- **REST** — GET = See, POST/PUT/PATCH/DELETE = Do
+- **GraphQL** — query = See, mutation = Do
 
 ## Auth Types
 
@@ -58,8 +171,8 @@ Most common. User pastes an API key.
 auth:
   type: api_key
   header: Authorization    # or X-Api-Key, etc.
-  prefix: "Bearer "        # prefix before key (use "" for none)
-  help_url: https://...    # where to get the key
+  prefix: "Bearer "       # prefix before key (use "" for none)
+  help_url: https://...   # where to get the key
 ```
 
 ### oauth
@@ -73,33 +186,36 @@ auth:
   scopes:
     - read
     - write
+  help_url: https://...
+```
+
+### service_account
+For Google Workspace APIs.
+
+```yaml
+auth:
+  type: service_account
+  scopes:
+    - https://www.googleapis.com/auth/gmail.readonly
+```
+
+### cli
+For CLI tool authentication (e.g., `gh auth login`).
+
+```yaml
+auth:
+  type: cli
+  command: gh
+  auth_command: gh auth login
 ```
 
 ### local
-For local-only services (no API key needed).
+For local-only services (no credentials needed).
 
 ```yaml
 auth:
   type: local
-local: true
 ```
-
-## API Types
-
-Permissions are enforced automatically based on API type:
-
-```yaml
-api:
-  type: rest     # GET = See, POST/PUT/DELETE = Do
-  # or
-  type: graphql  # query = See, mutation = Do
-  # or  
-  type: sqlite   # SELECT = See, INSERT/UPDATE/DELETE = Do
-  # or
-  type: local    # Local execution (may require full access)
-```
-
-Users control "See" (read) and "Do" (write) permissions per account.
 
 ## Categories
 
@@ -108,30 +224,73 @@ Users control "See" (read) and "Do" (write) permissions per account.
 - `search` — Web search, content extraction
 - `code` — GitHub, GitLab, code hosting
 - `finance` — Banking, payments, accounting
+- `media` — Video, audio, images
 
 ## Index Entry
 
-Add your skill to `index.yaml`:
+**Note:** The `index.yaml` file is auto-generated from skill frontmatter. You don't need to manually edit it.
 
+Skills are discovered by scanning `skills/{id}/skill.md` files. The frontmatter contains all metadata needed.
+
+## Complete Skill Schema
+
+### Required Fields
+
+- `id` — Unique identifier (e.g., `"todoist"`, `"youtube"`)
+- `name` — Display name (e.g., `"Todoist"`, `"YouTube"`)
+- `description` — One-line description
+- `category` — One of: `productivity`, `communication`, `search`, `code`, `finance`, `media`
+- `protocol` — `rest`, `graphql`, or `shell` (default: `rest`)
+
+### Optional Display Fields
+
+- `icon` — Icon URL (e.g., `"https://cdn.simpleicons.org/todoist"`)
+- `color` — Brand color hex (e.g., `"#E44332"`)
+
+### Protocol-Specific Fields
+
+**For `shell` protocol:**
+- `requires` — List of required binaries (e.g., `["yt-dlp", "curl"]`)
+- `actions` — Map of action definitions (see Shell Actions below)
+- `auth` — Usually `type: local` (no credentials) or `type: api_key` if API key needed
+
+**For `rest`/`graphql` protocol:**
+- `api` — API configuration with `type` and `base_url`
+- `auth` — Authentication configuration (see Auth Types below)
+
+### Shell Actions
+
+Each action has:
+- `description` — What the action does
+- `params` — Parameter definitions (optional)
+- `run` — Shell script to execute
+
+**Parameter schema:**
 ```yaml
-  - id: service-name
-    name: Service Name
-    description: One-line description
-    category: productivity
-    icon: https://cdn.simpleicons.org/servicename
-    color: "#hexcolor"
-    updated_at: "2025-01-15"
+params:
+  param_name:
+    type: string | integer | boolean
+    required: true | false
+    default: "default value"  # optional
+    description: "What this parameter does"
 ```
+
+**Environment variables available in `run` scripts:**
+- `$AUTH_TOKEN` — Credential from agentOS (if auth configured)
+- `$PARAM_*` — Parameters (uppercased, e.g., `$PARAM_URL`, `$PARAM_LANG`)
+- `$AGENTOS_DOWNLOADS` — Downloads folder path
+- `$AGENTOS_CACHE` — Cache folder path
 
 ## Tips
 
-1. **Test with curl first** — Make sure the API works before documenting
-2. **Keep it concise** — AI reads this, so less is often more
-3. **Show real examples** — Actual curl commands that work
-4. **Note quirks** — API gotchas, rate limits, pagination
+1. **Look at examples** — See `skills/exa/skill.md` and `skills/youtube/skill.md` for shell protocol examples
+2. **Test actions first** — For shell skills, test the `run` scripts manually with sample parameters
+3. **Keep it concise** — AI reads this, so less is often more
+4. **Show real examples** — Actual commands/API calls that work
+5. **Note quirks** — API gotchas, rate limits, pagination, edge cases
+6. **Use environment variables** — `$PARAM_*` for parameters, `$AUTH_TOKEN` for credentials
+7. **Test locally** — Set `skills_source` in agentOS settings to your local repo path to test changes
 
 ## Questions?
 
 Open an issue or discussion!
-
-
