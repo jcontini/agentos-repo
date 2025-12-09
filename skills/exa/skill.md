@@ -7,6 +7,10 @@ icon: https://www.finsmes.com/wp-content/uploads/2024/07/exa.jpeg
 color: "#5436DA"
 protocol: shell
 
+provides:
+  - web-search
+  - url-extract
+
 auth:
   type: api_key
   header: x-api-key
@@ -15,6 +19,39 @@ auth:
 requires:
   - curl
   - jq
+
+settings:
+  num_results:
+    label: Number of Results
+    description: Default number of search results to return (1-100)
+    type: integer
+    default: "5"
+    min: 1
+    max: 100
+  livecrawl:
+    label: Live Crawl Preference
+    description: Freshness preference for content (never = fastest, always = slowest)
+    type: enum
+    default: "never"
+    options:
+      - never
+      - fallback
+      - preferred
+      - always
+  include_text:
+    label: Include Text Content
+    description: Include page text content by default (slower, use only when needed)
+    type: boolean
+    default: "false"
+  type:
+    label: Search Type
+    description: Default search type (auto = let Exa choose, neural = concepts/research, keyword = exact terms)
+    type: enum
+    default: "auto"
+    options:
+      - auto
+      - neural
+      - keyword
 
 actions:
   search:

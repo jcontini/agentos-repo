@@ -7,6 +7,9 @@ icon: https://www.google.com/s2/favicons?domain=firecrawl.dev&sz=64
 color: "#FF6B35"
 protocol: shell
 
+provides:
+  - url-extract
+
 auth:
   type: api_key
   header: Authorization
