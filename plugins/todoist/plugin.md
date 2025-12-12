@@ -196,9 +196,9 @@ Personal task management - create, list, complete, update, delete tasks.
 
 ## Requirements
 
-This skill requires `curl` and `jq` (usually pre-installed on macOS).
+This plugin requires `curl` and `jq` (usually pre-installed on macOS).
 
-## Actions
+## Tools
 
 ### list_tasks
 List tasks with optional filtering.
@@ -209,9 +209,9 @@ List tasks with optional filtering.
 
 **Examples:**
 ```
-use-skill(skill: "todoist", action: "list_tasks")
-use-skill(skill: "todoist", action: "list_tasks", params: {filter: "today"})
-use-skill(skill: "todoist", action: "list_tasks", params: {filter: "overdue"})
+use-plugin(plugin: "todoist", tool: "list_tasks")
+use-plugin(plugin: "todoist", tool: "list_tasks", params: {filter: "today"})
+use-plugin(plugin: "todoist", tool: "list_tasks", params: {filter: "overdue"})
 ```
 
 ### get_task
@@ -222,7 +222,7 @@ Get a task by ID, including any subtasks.
 
 **Example:**
 ```
-use-skill(skill: "todoist", action: "get_task", params: {id: "123456"})
+use-plugin(plugin: "todoist", tool: "get_task", params: {id: "123456"})
 ```
 
 ### create_task
@@ -238,8 +238,8 @@ Create a new task. AI-created tasks are automatically labeled with "AI".
 
 **Examples:**
 ```
-use-skill(skill: "todoist", action: "create_task", params: {content: "Buy groceries"})
-use-skill(skill: "todoist", action: "create_task", params: {content: "Urgent meeting", priority: 4, due_string: "tomorrow"})
+use-plugin(plugin: "todoist", tool: "create_task", params: {content: "Buy groceries"})
+use-plugin(plugin: "todoist", tool: "create_task", params: {content: "Urgent meeting", priority: 4, due_string: "tomorrow"})
 ```
 
 ### update_task
@@ -254,7 +254,7 @@ Update an existing task. Uses POST method (not PUT - Todoist quirk).
 
 **Example:**
 ```
-use-skill(skill: "todoist", action: "update_task", params: {id: "123456", due_string: "tomorrow"})
+use-plugin(plugin: "todoist", tool: "update_task", params: {id: "123456", due_string: "tomorrow"})
 ```
 
 ### complete_task / reopen_task
@@ -262,8 +262,8 @@ Mark task complete or reopen it.
 
 **Examples:**
 ```
-use-skill(skill: "todoist", action: "complete_task", params: {id: "123456"})
-use-skill(skill: "todoist", action: "reopen_task", params: {id: "123456"})
+use-plugin(plugin: "todoist", tool: "complete_task", params: {id: "123456"})
+use-plugin(plugin: "todoist", tool: "reopen_task", params: {id: "123456"})
 ```
 
 ### delete_task
@@ -271,7 +271,7 @@ Permanently delete a task.
 
 **Example:**
 ```
-use-skill(skill: "todoist", action: "delete_task", params: {id: "123456"})
+use-plugin(plugin: "todoist", tool: "delete_task", params: {id: "123456"})
 ```
 
 ### list_projects / list_labels
@@ -279,8 +279,8 @@ List all projects or labels.
 
 **Examples:**
 ```
-use-skill(skill: "todoist", action: "list_projects")
-use-skill(skill: "todoist", action: "list_labels")
+use-plugin(plugin: "todoist", tool: "list_projects")
+use-plugin(plugin: "todoist", tool: "list_labels")
 ```
 
 ## ⚠️ Critical: Recurring Tasks

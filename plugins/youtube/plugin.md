@@ -85,7 +85,7 @@ Extract transcripts, download videos, and get metadata from YouTube using yt-dlp
 
 ## Requirements
 
-This skill requires `yt-dlp` to be installed on your system:
+This plugin requires `yt-dlp` to be installed on your system:
 
 ```bash
 # macOS (Homebrew)
@@ -98,7 +98,7 @@ pip install yt-dlp
 which yt-dlp
 ```
 
-## Actions
+## Tools
 
 ### transcribe
 Get the transcript/subtitles from a YouTube video as plain text.
@@ -109,7 +109,7 @@ Get the transcript/subtitles from a YouTube video as plain text.
 
 **Example:**
 ```
-use-skill(skill: "youtube", action: "transcribe", params: {url: "https://youtube.com/watch?v=..."})
+use-plugin(plugin: "youtube", tool: "transcribe", params: {url: "https://youtube.com/watch?v=..."})
 ```
 
 **Notes:**
@@ -125,7 +125,7 @@ Get video metadata as JSON (title, duration, channel, view count, etc).
 
 **Example:**
 ```
-use-skill(skill: "youtube", action: "metadata", params: {url: "https://youtube.com/watch?v=..."})
+use-plugin(plugin: "youtube", tool: "metadata", params: {url: "https://youtube.com/watch?v=..."})
 ```
 
 ### download
@@ -137,7 +137,7 @@ Download the video file to the user's Downloads folder.
 
 **Example:**
 ```
-use-skill(skill: "youtube", action: "download", params: {url: "https://youtube.com/watch?v=...", quality: "720"})
+use-plugin(plugin: "youtube", tool: "download", params: {url: "https://youtube.com/watch?v=...", quality: "720"})
 ```
 
 ### audio
@@ -148,7 +148,7 @@ Extract audio as MP3 to the user's Downloads folder.
 
 **Example:**
 ```
-use-skill(skill: "youtube", action: "audio", params: {url: "https://youtube.com/watch?v=..."})
+use-plugin(plugin: "youtube", tool: "audio", params: {url: "https://youtube.com/watch?v=..."})
 ```
 
 ## URL Formats

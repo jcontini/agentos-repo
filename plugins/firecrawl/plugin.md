@@ -118,7 +118,7 @@ Web scraping and content extraction that handles JavaScript-heavy sites. Perfect
 
 **Cost**: ~$0.009/page for scraping, ~$0.01/search
 
-## Actions
+## Tools
 
 ### scrape
 Get clean markdown from any webpage. Handles JavaScript rendering automatically.
@@ -129,7 +129,7 @@ Get clean markdown from any webpage. Handles JavaScript rendering automatically.
 
 **Example:**
 ```
-use-skill(skill: "firecrawl", action: "scrape", params: {url: "https://example.com"})
+use-plugin(plugin: "firecrawl", tool: "scrape", params: {url: "https://example.com"})
 ```
 
 **Returns:** Clean markdown content from the page
@@ -143,7 +143,7 @@ Get full scrape response with metadata, multiple formats, and more detail.
 
 **Example:**
 ```
-use-skill(skill: "firecrawl", action: "scrape_full", params: {url: "https://example.com", formats: "markdown,links"})
+use-plugin(plugin: "firecrawl", tool: "scrape_full", params: {url: "https://example.com", formats: "markdown,links"})
 ```
 
 **Returns:** Full JSON response with requested formats
@@ -157,7 +157,7 @@ Search the web and get content from results in one call.
 
 **Example:**
 ```
-use-skill(skill: "firecrawl", action: "search", params: {query: "MCP protocol specification"})
+use-plugin(plugin: "firecrawl", tool: "search", params: {query: "MCP protocol specification"})
 ```
 
 **Returns:** Search results with page content
@@ -171,7 +171,7 @@ Crawl multiple pages starting from a URL. Good for documentation sites.
 
 **Example:**
 ```
-use-skill(skill: "firecrawl", action: "crawl", params: {url: "https://docs.example.com", limit: 20})
+use-plugin(plugin: "firecrawl", tool: "crawl", params: {url: "https://docs.example.com", limit: 20})
 ```
 
 **Returns:** Array of crawled pages with markdown content

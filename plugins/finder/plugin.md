@@ -1,11 +1,12 @@
 ---
-id: computer
-name: Computer
-description: Open apps, URLs, files, and navigate your file system
+id: finder
+name: Finder
+description: Open apps, URLs, files, and navigate your Mac file system
 category: productivity
-icon: https://cdn.simpleicons.org/apple
-color: "#000000"
+icon: https://upload.wikimedia.org/wikipedia/commons/b/b9/Finder_Icon_macOS_Tahoe.png
+color: "#1C8BF4"
 protocol: shell
+platform: macos
 requires:
   - tree
 
@@ -331,11 +332,11 @@ actions:
 
 ---
 
-# Computer
+# Finder
 
 Control your Mac - open anything, browse directories, read files, and full filesystem operations.
 
-## Actions (5 total)
+## Tools (5 total)
 
 | Action | Purpose |
 |--------|---------|

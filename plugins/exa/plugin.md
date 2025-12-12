@@ -203,19 +203,19 @@ Semantic web search and content extraction. Neural search finds content by meani
 **Simple (1 step):**
 - `search` with `include_text: true` → Slower but gets everything
 
-## Actions
+## Tools
 
 ### search_urls ⚡ (fastest)
 Quick search returning just URLs and titles.
 
 ```
-action: search_urls
+tool: search_urls
 params: {query: "macOS default apps"}
 ```
 
 With more results:
 ```
-action: search_urls
+tool: search_urls
 params: {query: "macOS default apps", num_results: 10}
 ```
 
@@ -223,19 +223,19 @@ params: {query: "macOS default apps", num_results: 10}
 Search with optional content extraction.
 
 ```
-action: search
+tool: search
 params: {query: "rust async patterns"}
 ```
 
 With page content (slower):
 ```
-action: search
+tool: search
 params: {query: "rust async patterns", include_text: true, num_results: 3}
 ```
 
 With fresh/live crawled content (slowest):
 ```
-action: search
+tool: search
 params: {query: "latest AI news", include_text: true, livecrawl: "always"}
 ```
 
@@ -243,13 +243,13 @@ params: {query: "latest AI news", include_text: true, livecrawl: "always"}
 Get content from specific URLs.
 
 ```
-action: extract
+tool: extract
 params: {urls: "https://docs.exa.ai/reference/search"}
 ```
 
 Multiple URLs:
 ```
-action: extract
+tool: extract
 params: {urls: "https://example.com/page1,https://example.com/page2"}
 ```
 
@@ -257,7 +257,7 @@ params: {urls: "https://example.com/page1,https://example.com/page2"}
 Find pages similar to a URL.
 
 ```
-action: find_similar
+tool: find_similar
 params: {url: "https://anthropic.com/claude"}
 ```
 
