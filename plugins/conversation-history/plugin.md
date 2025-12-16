@@ -7,7 +7,7 @@ icon: material-symbols:history
 color: "#8B5CF6"
 
 triggers:
-  - asks about previous AI conversations, chat history, or "what did we discuss"
+  - asks about Cursor, Claude, Raycast, or ChatGPT conversation history
 
 auth:
   type: local
