@@ -68,14 +68,38 @@ helpers: |
   }
 
 actions:
+  # Session Management - for interactive development
+  start_session:
+    description: |
+      Start a persistent browser session for interactive development.
+      The browser stays open between commands, allowing back-and-forth feedback.
+      Use session_id in subsequent actions to control this browser.
+    params:
+      url:
+        type: string
+        description: Optional initial URL to navigate to
+    run: browser
+
+  end_session:
+    description: Close a persistent browser session
+    params:
+      session_id:
+        type: string
+        required: true
+        description: Session ID from start_session
+    run: browser
+
+  # Regular actions - work standalone or with session_id
   inspect:
     readonly: true
     description: Get a diagnostic overview of a page - headings, buttons, inputs, console logs, network activity. Efficient alternative to screenshots.
     params:
+      session_id:
+        type: string
+        description: Optional session ID to use existing browser instead of launching new one
       url:
         type: string
-        required: true
-        description: URL to inspect
+        description: URL to inspect (required if no session_id)
       wait_ms:
         type: integer
         default: "1000"
@@ -115,14 +139,16 @@ actions:
   click:
     description: Click an element on a page. Returns console/network errors if any.
     params:
+      session_id:
+        type: string
+        description: Session ID to use existing browser (from start_session)
       url:
         type: string
-        required: true
-        description: URL to navigate to
+        description: URL to navigate to (required if no session_id)
       selector:
         type: string
         required: true
-        description: CSS selector of element to click
+        description: CSS selector or text selector (e.g. "text=Click me")
       wait_ms:
         type: integer
         default: "1000"
@@ -136,10 +162,12 @@ actions:
   type:
     description: Type text into an input field. Returns console/network errors if any.
     params:
+      session_id:
+        type: string
+        description: Session ID to use existing browser (from start_session)
       url:
         type: string
-        required: true
-        description: URL to navigate to
+        description: URL to navigate to (required if no session_id)
       selector:
         type: string
         required: true

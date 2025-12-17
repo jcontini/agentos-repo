@@ -7,11 +7,22 @@
  * 
  * For run_flow: Resolves element selectors to screen coordinates,
  * then executes OS-level input actions via AgentOS for screen recording.
+ * 
+ * Session Management:
+ * - start_session: Launch browser server, keep it running
+ * - Other actions can use session_id to connect to existing browser
+ * - end_session: Close the browser server
  */
 
 import { chromium } from 'playwright';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const action = process.env.PARAM_ACTION || process.argv[2];
 const url = process.env.PARAM_URL;
@@ -19,6 +30,7 @@ const selector = process.env.PARAM_SELECTOR;
 const text = process.env.PARAM_TEXT;
 const script = process.env.PARAM_SCRIPT;
 const actionsJson = process.env.PARAM_ACTIONS;
+const sessionId = process.env.PARAM_SESSION_ID;
 const waitMs = parseInt(process.env.PARAM_WAIT_MS || '1000', 10);
 const includeScreenshot = process.env.PARAM_SCREENSHOT === 'true';
 const headless = process.env.SETTING_HEADLESS !== 'false';
@@ -36,6 +48,214 @@ const userAgents = {
 
 const userAgent = userAgents[userAgentSetting] || userAgents.chrome;
 const downloadsDir = process.env.AGENTOS_DOWNLOADS || join(homedir(), 'Downloads');
+
+// Session storage
+const sessionsDir = join(homedir(), '.agentos');
+const sessionsFile = join(sessionsDir, 'browser-sessions.json');
+
+function loadSessions() {
+  try {
+    if (existsSync(sessionsFile)) {
+      return JSON.parse(readFileSync(sessionsFile, 'utf-8'));
+    }
+  } catch (e) {
+    // Ignore errors, return empty
+  }
+  return {};
+}
+
+function saveSessions(sessions) {
+  try {
+    if (!existsSync(sessionsDir)) {
+      mkdirSync(sessionsDir, { recursive: true });
+    }
+    writeFileSync(sessionsFile, JSON.stringify(sessions, null, 2));
+  } catch (e) {
+    console.error('Failed to save sessions:', e.message);
+  }
+}
+
+function generateSessionId() {
+  return 'session_' + Math.random().toString(36).substring(2, 10);
+}
+
+/**
+ * Start a persistent browser session.
+ * Spawns a daemon process that keeps the browser alive.
+ */
+async function startSession(initialUrl) {
+  const newSessionId = generateSessionId();
+  
+  // Path to daemon script
+  const daemonScript = join(__dirname, 'browser-daemon.mjs');
+  
+  // Spawn daemon as detached background process
+  const args = [daemonScript, newSessionId];
+  if (initialUrl) {
+    args.push(initialUrl);
+  }
+  
+  const daemon = spawn('node', args, {
+    detached: true,
+    stdio: 'ignore', // Don't inherit stdio so parent can exit
+    cwd: __dirname,
+  });
+  
+  // Unref so parent can exit independently
+  daemon.unref();
+  
+  // Wait for daemon to be ready (poll sessions file)
+  const maxWait = 30000; // 30 seconds max (navigation can take time)
+  const pollInterval = 300;
+  let waited = 0;
+  
+  while (waited < maxWait) {
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    waited += pollInterval;
+    
+    const sessions = loadSessions();
+    const session = sessions[newSessionId];
+    
+    // Accept 'ready' or 'active' - both mean browser is running
+    if (session && (session.status === 'active' || session.status === 'ready') && session.cdpEndpoint) {
+      // Wait a tiny bit more if still navigating
+      if (session.status === 'ready' && initialUrl) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      return {
+        success: true,
+        session_id: newSessionId,
+        cdp_endpoint: session.cdpEndpoint,
+        message: initialUrl 
+          ? `Browser session started on ${initialUrl}. Use session_id "${newSessionId}" for subsequent actions.`
+          : `Browser session started. Use session_id "${newSessionId}" in subsequent actions.`,
+      };
+    }
+  }
+  
+  // Timeout - something went wrong
+  return {
+    success: false,
+    error: `Session ${newSessionId} did not become ready within ${maxWait/1000} seconds. Check if Playwright is installed.`,
+  };
+}
+
+/**
+ * End a persistent browser session.
+ * Kills the daemon process and cleans up.
+ */
+async function endSession(sessionIdToEnd) {
+  const sessions = loadSessions();
+  const session = sessions[sessionIdToEnd];
+  
+  if (!session) {
+    return {
+      success: false,
+      error: `Session not found: ${sessionIdToEnd}`
+    };
+  }
+  
+  // Kill the daemon process if we have its PID
+  if (session.pid) {
+    try {
+      process.kill(session.pid, 'SIGTERM');
+    } catch (e) {
+      // Process might already be dead
+    }
+  }
+  
+  // Also try to close via CDP in case daemon didn't clean up
+  if (session.cdpEndpoint) {
+    try {
+      const browser = await chromium.connectOverCDP(session.cdpEndpoint);
+      await browser.close();
+    } catch (e) {
+      // Browser might already be closed
+    }
+  }
+  
+  // Remove from sessions
+  delete sessions[sessionIdToEnd];
+  saveSessions(sessions);
+  
+  return {
+    success: true,
+    message: `Session ${sessionIdToEnd} closed.`
+  };
+}
+
+/**
+ * Get browser and page for a session, or launch new browser if no session.
+ * Returns { browser, page, isSession } or throws error.
+ */
+async function getBrowserAndPage(sessionIdParam, urlParam) {
+  if (sessionIdParam) {
+    // Use existing session via CDP - this lets us see the SAME pages
+    const sessions = loadSessions();
+    const session = sessions[sessionIdParam];
+    
+    if (!session) {
+      throw new Error(`Session not found: ${sessionIdParam}. Start a new session with start_session.`);
+    }
+    
+    try {
+      // Connect via CDP - this gives us access to existing pages!
+      const browser = await chromium.connectOverCDP(session.cdpEndpoint);
+      
+      // Update last used
+      sessions[sessionIdParam].lastUsed = new Date().toISOString();
+      saveSessions(sessions);
+      
+      // Get existing context and page (the ones the user sees!)
+      const contexts = browser.contexts();
+      let page;
+      
+      if (contexts.length > 0) {
+        const pages = contexts[0].pages();
+        if (pages.length > 0) {
+          // Reuse existing page - this is the magic!
+          page = pages[0];
+        } else {
+          page = await contexts[0].newPage();
+        }
+      } else {
+        // Fallback: create new context/page
+        const context = await browser.newContext({
+          viewport: { width: 1280, height: 800 },
+          userAgent,
+          locale
+        });
+        page = await context.newPage();
+      }
+      
+      // Navigate only if URL provided AND different from current
+      if (urlParam && page.url() !== urlParam && !page.url().includes(urlParam)) {
+        await page.goto(urlParam, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      }
+      
+      return { browser, page, isSession: true };
+    } catch (e) {
+      throw new Error(`Failed to connect to session ${sessionIdParam}: ${e.message}. The browser may have been closed.`);
+    }
+  } else {
+    // Launch new browser (non-session mode)
+    const useHeadless = action === 'run_flow' ? false : headless;
+    const browser = await chromium.launch({ headless: useHeadless, slowMo });
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+      userAgent,
+      locale
+    });
+    const page = await context.newPage();
+    
+    if (urlParam) {
+      await page.goto(urlParam, { waitUntil: 'networkidle', timeout: 30000 });
+    }
+    
+    return { browser, page, isSession: false };
+  }
+}
 
 /**
  * Output a line of JSON to stdout and flush immediately.
@@ -356,16 +576,53 @@ async function processFlow(page, actions) {
 }
 
 async function run() {
-  // For run_flow, we need headed mode
-  const useHeadless = action === 'run_flow' ? false : headless;
+  // Handle session management actions first
+  if (action === 'start_session') {
+    try {
+      const result = await startSession(url);
+      console.log(JSON.stringify(result, null, 2));
+    } catch (error) {
+      console.log(JSON.stringify({
+        success: false,
+        error: `Failed to start session: ${error.message}`
+      }, null, 2));
+      process.exit(1);
+    }
+    return;
+  }
   
-  const browser = await chromium.launch({ headless: useHeadless, slowMo });
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 800 },
-    userAgent,
-    locale
-  });
-  const page = await context.newPage();
+  if (action === 'end_session') {
+    if (!sessionId) {
+      console.log(JSON.stringify({
+        success: false,
+        error: 'session_id is required for end_session'
+      }, null, 2));
+      process.exit(1);
+    }
+    try {
+      const result = await endSession(sessionId);
+      console.log(JSON.stringify(result, null, 2));
+    } catch (error) {
+      console.log(JSON.stringify({
+        success: false,
+        error: `Failed to end session: ${error.message}`
+      }, null, 2));
+      process.exit(1);
+    }
+    return;
+  }
+  
+  // Get browser and page (either from session or new launch)
+  let browser, page, isSession;
+  try {
+    ({ browser, page, isSession } = await getBrowserAndPage(sessionId, url));
+  } catch (error) {
+    console.log(JSON.stringify({
+      success: false,
+      error: error.message
+    }, null, 2));
+    process.exit(1);
+  }
   
   // Capture console messages
   page.on('console', msg => {
@@ -400,10 +657,10 @@ async function run() {
       });
     }
     // Only track non-asset requests to reduce noise
-    const url = response.url();
-    if (!url.match(/\.(png|jpg|jpeg|gif|svg|css|woff|woff2|ttf|ico)(\?|$)/)) {
+    const respUrl = response.url();
+    if (!respUrl.match(/\.(png|jpg|jpeg|gif|svg|css|woff|woff2|ttf|ico)(\?|$)/)) {
       networkRequests.push({
-        url: url.length > 100 ? url.substring(0, 100) + '...' : url,
+        url: respUrl.length > 100 ? respUrl.substring(0, 100) + '...' : respUrl,
         status,
         method: response.request().method()
       });
@@ -411,13 +668,17 @@ async function run() {
   });
   
   try {
-    // Navigate to URL (for non-flow actions)
+    // getBrowserAndPage already handles navigation, just wait if needed
     if (url && action !== 'run_flow') {
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
       await page.waitForTimeout(waitMs);
     }
     
     let result = { success: true };
+    
+    // Include session info in result if using a session
+    if (isSession && sessionId) {
+      result.session_id = sessionId;
+    }
     
     // Helper to add diagnostics to result
     const addDiagnostics = () => {
@@ -612,13 +873,13 @@ async function run() {
     }, null, 2));
     process.exit(1);
   } finally {
-    // For run_flow, keep browser open briefly so user can see final state
-    if (action === 'run_flow') {
-      // Don't close immediately - the Rust side will execute input actions
-      // and we want the browser visible during that time
-      // The browser will be closed when the process exits
+    if (isSession) {
+      // Disconnect without closing - browser stays open via daemon
+      await browser.disconnect?.() || browser.close?.();
+    } else {
+      // Close browser for non-session mode
+      await browser.close();
     }
-    await browser.close();
   }
 }
 
