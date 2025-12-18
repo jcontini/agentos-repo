@@ -17,6 +17,10 @@ api:
   base_url: https://api.linear.app/graphql
   type: graphql
 
+settings:
+  instructions:
+    type: instructions
+
 actions:
   # =============================================================================
   # READ OPERATIONS (No IDs needed)
