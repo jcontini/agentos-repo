@@ -2,126 +2,97 @@
 
 Open-source plugin definitions for [agentOS](https://github.com/jcontini/agentos).
 
-Plugins teach AI agents how to use your connected apps — they're markdown files with API documentation and configuration.
+Plugins teach AI agents how to use your apps and APIs — they're markdown files with configuration and documentation.
 
 ## What's a Plugin?
 
-A plugin is a markdown file with:
-- **YAML frontmatter** — metadata (protocol, auth config, actions/API settings)
-- **Instructions** — API docs the AI reads to make requests
-
-### Two Protocol Types
-
-**1. Shell Protocol** — Executes local commands (e.g., YouTube, Exa)
-
-```yaml
----
-id: youtube
-name: YouTube
-description: Get video transcripts and download videos
-category: media
-icon: https://cdn.simpleicons.org/youtube
-color: "#FF0000"
-protocol: shell
-
-requires:
-  - yt-dlp
-
-actions:
-  transcribe:
-    description: Get transcript text from a YouTube video
-    params:
-      url:
-        type: string
-        required: true
-        description: YouTube video URL
-      lang:
-        type: string
-        default: en
-        description: Subtitle language code
-    run: |
-      yt-dlp --skip-download --write-auto-sub \
-        --sub-lang "$PARAM_LANG" "$PARAM_URL"
----
-
-# YouTube
-
-Instructions for using YouTube...
-```
-
-**2. REST/GraphQL Protocol** — Cloud APIs (e.g., Todoist, Linear)
+A plugin is a markdown file (`plugins/{id}/plugin.md`) with:
+- **YAML frontmatter** — metadata, auth config, action definitions
+- **Markdown body** — instructions the AI reads to use the plugin
 
 ```yaml
 ---
 id: todoist
 name: Todoist
 description: Personal task management
-category: productivity
+tags: [tasks, productivity]
 icon: https://cdn.simpleicons.org/todoist
-color: "#E44332"
-protocol: rest  # or graphql
 
 auth:
   type: api_key
   header: Authorization
   prefix: "Bearer "
-  help_url: https://todoist.com/app/settings/integrations
 
-api:
-  type: rest
-  base_url: https://api.todoist.com
+actions:
+  get_tasks:
+    readonly: true
+    api:
+      method: GET
+      url: https://api.todoist.com/rest/v2/tasks
+  
+  create_task:
+    api:
+      method: POST
+      url: https://api.todoist.com/rest/v2/tasks
 ---
 
 # Todoist
 
-API documentation here...
+Instructions for AI go here...
 ```
 
-## Plugin Schema
+## Core Concepts
 
-Plugins have a YAML frontmatter section with metadata and a markdown body with instructions.
+### Plugin Lifecycle
 
-**Required fields:** `id`, `name`, `description`, `category`, `protocol`  
-**Optional fields:** `icon`, `color`, `requires` (for shell), `actions` (for shell), `api` (for rest/graphql), `auth`
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'darkMode': true, 'background': '#1a1a2e', 'fontSize': '12px', 'fontFamily': 'ui-monospace, monospace', 'primaryColor': '#4c1d95', 'primaryBorderColor': '#a78bfa', 'primaryTextColor': '#f3f4f6', 'lineColor': '#a78bfa', 'secondaryColor': '#4c1d95', 'tertiaryColor': '#2d2d4a' }}}%%
+stateDiagram-v2
+    direction LR
+    Available --> Installed: install
+    Installed --> Available: uninstall
+    state Installed {
+        direction LR
+        [*] --> NeedsCredential
+        NeedsCredential --> HasCredential: +cred
+        HasCredential --> NeedsCredential: -cred
+        NeedsCredential --> Enabled: enable
+        HasCredential --> Enabled: enable
+        Enabled --> Disabled: disable
+        Disabled --> Enabled: enable
+    }
+```
 
-For complete schema documentation, examples, and all authentication types, see [CONTRIBUTING.md](CONTRIBUTING.md).
+### Actions
 
-## Available Plugins
+Operations a plugin can perform:
 
-| Plugin | Category | Protocol | Description |
-|--------|----------|----------|-------------|
-| [Todoist](plugins/todoist/plugin.md) | Productivity | Shell | Personal task management |
-| [Linear](plugins/linear/plugin.md) | Productivity | Shell | Issue tracking and project management |
-| [Exa](plugins/exa/plugin.md) | Search | Shell | Semantic web search |
-| [YouTube](plugins/youtube/plugin.md) | Media | Shell | Video transcripts and downloads |
-| [Finder](plugins/finder/plugin.md) | Productivity | Shell | macOS file system access |
+| Field | Description |
+|-------|-------------|
+| `readonly: true` | Safe to call without confirmation |
+| `readonly: false` | Requires `confirmAction: true` to execute |
+
+Naming: `get_*`, `create_*`, `update_*`, `delete_*`, `search`
+
+### Accounts
+
+All plugins support multiple accounts (Personal, Work, etc.) at the AgentOS level.
 
 ## Using Plugins
 
-Plugins are fetched by the agentOS app when you browse and install them.
-
-1. Open agentOS → Plugins tab
-2. Browse available plugins
-3. Click to enable a plugin
-4. Connect your account (API key) if required
-5. Your AI agents can now use that service
-
-**Updating Plugins:** Plugin definitions are automatically synced from this repo.
+1. Open agentOS → Plugins
+2. Browse and install a plugin
+3. Add credentials if required
+4. AI agents can now use it via MCP
 
 ## Contributing
 
-Want to add a plugin for a new service? See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-### Validating Plugins
-
-Before submitting a PR, validate your plugins:
-
-```bash
-npm install
-npm run validate
-```
-
-This checks all plugins against the schema and reports any errors or warnings.
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the complete guide:
+- Plugin schema and all fields
+- Action types (REST, GraphQL, Shell)
+- Authentication options
+- AI-first design best practices
+- Testing and validation
 
 ## License
 

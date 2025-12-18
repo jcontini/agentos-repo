@@ -541,10 +541,21 @@ async function playStepBrowserMode(page, step) {
       if (step.selectors) {
         await page.locator(getSelector(step)).scrollIntoViewIfNeeded();
       } else {
-        await page.evaluate(({x, y}) => window.scrollTo(x, y), { x: step.x || 0, y: step.y || 0 });
+        // Smooth scroll with behavior option
+        await page.evaluate(({x, y, smooth}) => {
+          window.scrollTo({ 
+            left: x, 
+            top: y, 
+            behavior: smooth ? 'smooth' : 'instant' 
+          });
+        }, { x: step.x || 0, y: step.y || 0, smooth: step.smooth !== false });
+        // Wait for smooth scroll to complete
+        if (step.smooth !== false) {
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
       break;
-      
+
     case 'hover': {
       const locator = page.locator(getSelector(step)).first();
       await locator.hover();
