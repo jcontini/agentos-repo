@@ -2,11 +2,10 @@
 id: youtube
 name: YouTube
 description: Get video transcripts and download videos using yt-dlp
-category: media
 icon: https://cdn.simpleicons.org/youtube
 color: "#FF0000"
 
-topics: [video transcripts, YouTube, video downloads]
+tags: [video transcripts, YouTube, video downloads]
 
 requires:
   - name: yt-dlp

@@ -2,11 +2,10 @@
 id: exa
 name: Exa
 description: Semantic web search and content extraction for research
-category: search
 icon: https://www.finsmes.com/wp-content/uploads/2024/07/exa.jpeg
 color: "#5436DA"
 
-topics: [web search, URL extraction, research]
+tags: [web search, URL extraction, research]
 
 provides:
   web-search:

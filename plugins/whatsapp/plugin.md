@@ -2,18 +2,17 @@
 id: whatsapp
 name: WhatsApp
 description: Read WhatsApp messages from local macOS database
-category: communication
 icon: https://cdn.simpleicons.org/whatsapp
 color: "#25D366"
 
-topics: [WhatsApp, WhatsApp messages]
+tags: [WhatsApp, WhatsApp messages]
 platform: macos
 
 requires:
   - sqlite3  # Pre-installed on macOS
 
 actions:
-  list_conversations:
+  get_conversations:
     readonly: true
     description: List recent WhatsApp conversations
     params:
@@ -35,7 +34,7 @@ actions:
       LIMIT ${PARAM_LIMIT:-20};
       SQL
 
-  list_messages:
+  get_messages:
     readonly: true
     description: Get messages from a conversation or all recent messages
     params:
@@ -167,7 +166,7 @@ Read WhatsApp messages from the local macOS database. This is read-only access t
 
 ## Tools
 
-### list_conversations
+### get_conversations
 List recent WhatsApp conversations with preview.
 
 **Parameters:**
@@ -175,11 +174,11 @@ List recent WhatsApp conversations with preview.
 
 **Example:**
 ```
-use-plugin(plugin: "whatsapp", tool: "list_conversations")
-use-plugin(plugin: "whatsapp", tool: "list_conversations", params: {limit: 10})
+use-plugin(plugin: "whatsapp", tool: "get_conversations")
+use-plugin(plugin: "whatsapp", tool: "get_conversations", params: {limit: 10})
 ```
 
-### list_messages
+### get_messages
 Get messages, optionally filtered by contact or time range.
 
 **Parameters:**
@@ -189,9 +188,9 @@ Get messages, optionally filtered by contact or time range.
 
 **Examples:**
 ```
-use-plugin(plugin: "whatsapp", tool: "list_messages")
-use-plugin(plugin: "whatsapp", tool: "list_messages", params: {contact: "Mom"})
-use-plugin(plugin: "whatsapp", tool: "list_messages", params: {days: 7, limit: 50})
+use-plugin(plugin: "whatsapp", tool: "get_messages")
+use-plugin(plugin: "whatsapp", tool: "get_messages", params: {contact: "Mom"})
+use-plugin(plugin: "whatsapp", tool: "get_messages", params: {days: 7, limit: 50})
 ```
 
 ### get_unread

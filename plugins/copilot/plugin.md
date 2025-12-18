@@ -2,11 +2,10 @@
 id: copilot
 name: Copilot Money
 description: Manage finances in Copilot Money - transactions, categories, and organization
-category: finance
 icon: https://cdn.jim-nielsen.com/ios/512/copilot-track-budget-money-2025-10-31.png
 color: "#00C853"
 
-topics: [finances, transactions, budget]
+tags: [finances, transactions, budget]
 platform: macos
 
 requires:
@@ -18,7 +17,7 @@ actions:
   # READ OPERATIONS
   # ============================================
   
-  list_transactions:
+  get_transactions:
     readonly: true
     description: List recent transactions
     params:
@@ -165,7 +164,7 @@ actions:
         [.[] | . + {category_name: ($catMap[.category_id] // "Uncategorized")}]
       '
 
-  list_categories:
+  get_categories:
     readonly: true
     description: List all available categories with IDs (for recategorization)
     run: |
@@ -408,7 +407,7 @@ actions:
       category_id:
         type: string
         required: true
-        description: New category ID (use list_categories to get IDs)
+        description: New category ID (use get_categories to get IDs)
     run: |
       DB="$HOME/Library/Group Containers/group.com.copilot.production/database/CopilotDB.sqlite"
       require_file "$DB"
@@ -650,11 +649,11 @@ Manage your finances in [Copilot Money](https://copilot.money) directly through 
 
 | Tool | Description |
 |------|-------------|
-| `list_transactions` | List recent transactions |
+| `get_transactions` | List recent transactions |
 | `get_transaction` | Get full details of a specific transaction |
 | `search` | Search transactions by merchant name |
 | `unreviewed` | List transactions needing review |
-| `list_categories` | List available categories with IDs |
+| `get_categories` | List available categories with IDs |
 | `spending_by_month` | Monthly spending totals |
 | `spending_by_merchant` | Spending grouped by merchant |
 | `spending_by_category` | Spending grouped by category |
@@ -685,7 +684,7 @@ Manage your finances in [Copilot Money](https://copilot.money) directly through 
 unreviewed(days: 7)
 
 # 2. Get available categories
-list_categories()
+get_categories()
 
 # 3. Recategorize a transaction
 recategorize(id: "abc123", category_id: "4P0OGwQa757X8J9N5ZA2")
@@ -722,7 +721,7 @@ unhide(id: "abc123")
 
 - **Sync behavior**: User changes (category, notes, type) persist across Plaid syncs
 - **Amount signs**: Negative = spending, positive = income/refunds
-- **Categories**: Use `list_categories` to get valid category IDs before recategorizing
+- **Categories**: Use `get_categories` to get valid category IDs before recategorizing
 - **Bulk ops**: Use `recategorize_merchant` to set up "merchant rules" - all past and future transactions from that merchant will keep your category
 - **What's NOT writable locally**: Budget amounts, tag definitions, and account settings are stored in Copilot's cloud (Firestore) and can't be modified locally
 

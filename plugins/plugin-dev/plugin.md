@@ -2,7 +2,6 @@
 id: plugin-dev
 name: Plugin Development
 description: Guide for building, auditing, and updating AgentOS plugins
-category: code
 icon: material-symbols:build
 color: "#10B981"
 
@@ -161,7 +160,6 @@ Plugins live in `plugins/{id}/plugin.md` with YAML frontmatter + markdown body.
 id: my-plugin
 name: My Plugin
 description: What it does (one line)
-category: productivity  # productivity, communication, search, code, finance, media
 icon: material-symbols:icon-name  # Iconify format OR URL
 color: "#hexcolor"
 

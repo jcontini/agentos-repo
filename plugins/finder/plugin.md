@@ -2,11 +2,10 @@
 id: finder
 name: Finder
 description: Open apps, URLs, files, and navigate your Mac file system
-category: productivity
 icon: https://upload.wikimedia.org/wikipedia/commons/b/b9/Finder_Icon_macOS_Tahoe.png
 color: "#1C8BF4"
 
-topics: [open apps, open files, open URLs, file navigation]
+tags: [open apps, open files, open URLs, file navigation]
 platform: macos
 requires:
   - name: tree

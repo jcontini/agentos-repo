@@ -2,11 +2,10 @@
 id: todoist
 name: Todoist
 description: Personal task management - create, list, complete, update, delete tasks
-category: productivity
 icon: https://cdn.simpleicons.org/todoist
 color: "#E44332"
 
-topics: [tasks, to-dos, reminders]
+tags: [tasks, to-dos, reminders]
 
 auth:
   type: api_key
@@ -18,7 +17,7 @@ requires:
   - jq    # Usually pre-installed on macOS
 
 actions:
-  list_tasks:
+  get_tasks:
     readonly: true
     description: List tasks, optionally filtered by today/overdue/project
     params:
@@ -175,14 +174,14 @@ actions:
       method: DELETE
       url: https://api.todoist.com/rest/v2/tasks/$PARAM_ID
 
-  list_projects:
+  get_projects:
     readonly: true
     description: List all projects
     api:
       method: GET
       url: https://api.todoist.com/rest/v2/projects
 
-  list_labels:
+  get_labels:
     description: List all labels
     api:
       method: GET
@@ -199,7 +198,7 @@ This plugin requires `curl` and `jq` (usually pre-installed on macOS).
 
 ## Tools
 
-### list_tasks
+### get_tasks
 List tasks with optional filtering.
 
 **Parameters:**
@@ -208,9 +207,9 @@ List tasks with optional filtering.
 
 **Examples:**
 ```
-use-plugin(plugin: "todoist", tool: "list_tasks")
-use-plugin(plugin: "todoist", tool: "list_tasks", params: {filter: "today"})
-use-plugin(plugin: "todoist", tool: "list_tasks", params: {filter: "overdue"})
+use-plugin(plugin: "todoist", tool: "get_tasks")
+use-plugin(plugin: "todoist", tool: "get_tasks", params: {filter: "today"})
+use-plugin(plugin: "todoist", tool: "get_tasks", params: {filter: "overdue"})
 ```
 
 ### get_task
@@ -273,13 +272,13 @@ Permanently delete a task.
 use-plugin(plugin: "todoist", tool: "delete_task", params: {id: "123456"})
 ```
 
-### list_projects / list_labels
+### get_projects / get_labels
 List all projects or labels.
 
 **Examples:**
 ```
-use-plugin(plugin: "todoist", tool: "list_projects")
-use-plugin(plugin: "todoist", tool: "list_labels")
+use-plugin(plugin: "todoist", tool: "get_projects")
+use-plugin(plugin: "todoist", tool: "get_labels")
 ```
 
 ## ⚠️ Critical: Recurring Tasks

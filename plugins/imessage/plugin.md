@@ -2,12 +2,11 @@
 id: imessage
 name: iMessage
 description: Read iMessages and SMS from macOS Messages app
-category: communication
 icon: https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/IMessage_logo.svg/1200px-IMessage_logo.svg.png
 color: "#34C759"
 platform: macos
 
-topics: [text messages, iMessages, SMS]
+tags: [text messages, iMessages, SMS]
 
 requires:
   - sqlite3  # Pre-installed on macOS
@@ -16,7 +15,7 @@ permissions:
   - full_disk_access
 
 actions:
-  list_conversations:
+  get_conversations:
     readonly: true
     description: List recent iMessage/SMS conversations
     params:
@@ -55,7 +54,7 @@ actions:
       LIMIT ${PARAM_LIMIT:-20};
       SQL
 
-  list_messages:
+  get_messages:
     readonly: true
     description: Get messages from a conversation or all recent messages
     params:
@@ -205,13 +204,13 @@ Note: The iMessage database is in a protected system location. Without Full Disk
 
 ## Tools
 
-### list_conversations
+### get_conversations
 List recent conversations with last message preview.
 
 **Parameters:**
 - `limit` (optional): Number of conversations, default 20
 
-### list_messages
+### get_messages
 Get messages, optionally filtered by contact or time range.
 
 **Parameters:**

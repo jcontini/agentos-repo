@@ -2,11 +2,10 @@
 id: linear
 name: Linear
 description: Project management with blocking relationships, cycles, and full API access
-category: productivity
 icon: https://cdn.simpleicons.org/linear
 color: "#5E6AD2"
 
-topics: [issues, tickets, project management]
+tags: [issues, tickets, project management]
 
 auth:
   type: api_key
@@ -30,28 +29,28 @@ actions:
       query: "{ viewer { id name email } }"
       extract: .data.viewer
 
-  list_teams:
+  get_teams:
     readonly: true
     description: List all teams (use to get team IDs for other operations)
     graphql:
       query: "{ teams { nodes { id key name } } }"
       extract: .data.teams.nodes
 
-  list_projects:
+  get_projects:
     readonly: true
     description: List all projects
     graphql:
       query: "{ projects { nodes { id name state priority lead { name } } } }"
       extract: .data.projects.nodes
 
-  list_workflow_states:
+  get_workflow_states:
     readonly: true
     description: List workflow states for a team (use to get state IDs)
     params:
       team_id:
         type: string
         required: true
-        description: Team ID (get from list_teams)
+        description: Team ID (get from get_teams)
     graphql:
       query: |
         query($teamId: ID!) {
@@ -63,14 +62,14 @@ actions:
         teamId: $PARAM_TEAM_ID
       extract: .data.workflowStates.nodes
 
-  list_cycles:
+  get_cycles:
     readonly: true
     description: List cycles for a team
     params:
       team_id:
         type: string
         required: true
-        description: Team ID (get from list_teams)
+        description: Team ID (get from get_teams)
     graphql:
       query: |
         query($teamId: ID!) {
@@ -86,7 +85,7 @@ actions:
   # ISSUES - LIST & GET
   # =============================================================================
 
-  list_issues:
+  get_issues:
     readonly: true
     description: List issues, optionally filtered by team/state/assignee
     params:
@@ -169,7 +168,7 @@ actions:
       team_id:
         type: string
         required: true
-        description: Team ID (get from list_teams)
+        description: Team ID (get from get_teams)
       title:
         type: string
         required: true
@@ -182,13 +181,13 @@ actions:
         description: Priority 0-4 (1=Urgent, 2=High, 3=Medium, 4=Low)
       state_id:
         type: string
-        description: State ID (get from list_workflow_states)
+        description: State ID (get from get_workflow_states)
       project_id:
         type: string
-        description: Project ID (get from list_projects)
+        description: Project ID (get from get_projects)
       cycle_id:
         type: string
-        description: Cycle ID (get from list_cycles)
+        description: Cycle ID (get from get_cycles)
       assignee_id:
         type: string
         description: Assignee user ID
@@ -234,13 +233,13 @@ actions:
         description: New priority 0-4
       state_id:
         type: string
-        description: New state ID (get from list_workflow_states)
+        description: New state ID (get from get_workflow_states)
       project_id:
         type: string
-        description: Project ID (get from list_projects)
+        description: Project ID (get from get_projects)
       cycle_id:
         type: string
-        description: Cycle ID (get from list_cycles, null to remove)
+        description: Cycle ID (get from get_cycles, null to remove)
       assignee_id:
         type: string
         description: New assignee user ID
@@ -382,14 +381,14 @@ Get your API key from: https://linear.app/settings/api
 
 ### Create an issue
 
-1. `list_teams` → Get team ID
-2. `list_workflow_states(team_id: "...")` → Get state ID (optional)
+1. `get_teams` → Get team ID
+2. `get_workflow_states(team_id: "...")` → Get state ID (optional)
 3. `create_issue(team_id: "...", title: "...", state_id: "...")`
 
 ### Update issue state
 
 1. `get_issue(id: "AGE-8")` → Get current issue and team ID
-2. `list_workflow_states(team_id: "...")` → Find the desired state ID
+2. `get_workflow_states(team_id: "...")` → Find the desired state ID
 3. `update_issue(id: "AGE-8", state_id: "...")`
 
 ### Link related issues
@@ -411,11 +410,11 @@ Get your API key from: https://linear.app/settings/api
 | Tool | Purpose | Returns |
 |------|---------|---------|
 | `whoami` | Current user info | id, name, email |
-| `list_teams` | All teams | id, key, name |
-| `list_projects` | All projects | id, name, state, priority |
-| `list_workflow_states(team_id)` | Team's workflow states | id, name, type |
-| `list_cycles(team_id)` | Team's cycles | id, number, dates |
-| `list_issues(...)` | Issues with filters | id, identifier, title, state, etc |
+| `get_teams` | All teams | id, key, name |
+| `get_projects` | All projects | id, name, state, priority |
+| `get_workflow_states(team_id)` | Team's workflow states | id, name, type |
+| `get_cycles(team_id)` | Team's cycles | id, number, dates |
+| `get_issues(...)` | Issues with filters | id, identifier, title, state, etc |
 | `get_issue(id)` | Full issue details | Everything including relations |
 
 ### Write Operations

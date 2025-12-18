@@ -2,12 +2,11 @@
 id: apple-calendar
 name: Apple Calendar
 description: Read and manage macOS Calendar events
-category: productivity
 icon: https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Apple_Calendar_%28iOS%29.svg/2560px-Apple_Calendar_%28iOS%29.svg.png
 color: "#FF3B30"
 platform: macos
 
-topics: [calendar, schedule, meetings, availability]
+tags: [calendar, schedule, meetings, availability]
 
 requires:
   - swift    # Pre-installed on macOS
@@ -17,7 +16,7 @@ permissions:
   - calendar
 
 actions:
-  list_calendars:
+  get_calendars:
     readonly: true
     description: List all available calendars with colors
     run: |
@@ -720,7 +719,7 @@ Read and manage macOS Calendar events. Uses EventKit for fast reads and AppleScr
 
 | Action | Purpose | Implementation |
 |--------|---------|----------------|
-| `list_calendars` | List all calendars | AppleScript |
+| `get_calendars` | List all calendars | AppleScript |
 | `list` | List upcoming events | Swift/EventKit |
 | `get` | Get event details by UID | Swift/EventKit |
 | `today` | Get today's events | Swift/EventKit |
@@ -730,13 +729,13 @@ Read and manage macOS Calendar events. Uses EventKit for fast reads and AppleScr
 
 ---
 
-## list_calendars
+## get_calendars
 
 List all available calendars with their IDs.
 
 **Example:**
 ```
-list_calendars()
+get_calendars()
 ```
 
 **Output:**

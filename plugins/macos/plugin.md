@@ -2,11 +2,10 @@
 id: macos
 name: macOS
 description: Open apps, URLs, files, and navigate your Mac file system
-category: productivity
 icon: https://cdn.simpleicons.org/apple
 color: "#000000"
 
-topics: [open apps, open files, open URLs, file navigation, macOS]
+tags: [open apps, open files, open URLs, file navigation, macOS]
 platform: macos
 requires:
   - name: tree

@@ -2,11 +2,10 @@
 id: conversation-history
 name: Conversation History
 description: Query your local Cursor conversation history - list recent chats, search by keyword, see files modified
-category: productivity
 icon: material-symbols:history
 color: "#8B5CF6"
 
-topics: [conversation history, Cursor chats, Claude chats, ChatGPT history]
+tags: [conversation history, Cursor chats, Claude chats, ChatGPT history]
 
 auth:
   type: local

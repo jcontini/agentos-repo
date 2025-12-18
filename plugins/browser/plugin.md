@@ -2,11 +2,10 @@
 id: browser
 name: Browser
 description: Browser automation with console/network diagnostics for testing and debugging
-category: automation
 icon: material-symbols:web
 color: "#4285F4"
 
-topics: [browser automation, webpage inspection, web debugging]
+tags: [browser automation, webpage inspection, web debugging]
 
 settings:
   recording_format:

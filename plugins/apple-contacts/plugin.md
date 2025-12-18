@@ -2,11 +2,10 @@
 id: apple-contacts
 name: Apple Contacts
 description: Search, view, and manage macOS Contacts
-category: productivity
 icon: https://upload.wikimedia.org/wikipedia/en/a/ac/MacOS_Contacts_icon.png
 color: "#000000"
 
-topics: [contacts, phone numbers, email addresses]
+tags: [contacts, phone numbers, email addresses]
 platform: macos
 
 requires:
