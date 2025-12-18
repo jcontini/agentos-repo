@@ -346,9 +346,10 @@
    * Record a step (sends to daemon via exposed function).
    */
   function record(step) {
-    // Add timestamp for debugging
+    // Add metadata for debugging
+    step._url = window.location.href;
     step._timestamp = Date.now();
-    
+
     if (typeof window.__agentosRecord === 'function') {
       window.__agentosRecord(step);
     } else {
