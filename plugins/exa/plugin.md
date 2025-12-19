@@ -23,9 +23,7 @@ auth:
   header: x-api-key
   help_url: https://dashboard.exa.ai/api-keys
 
-requires:
-  - curl  # Usually pre-installed
-  - jq    # Usually pre-installed on macOS
+# No shell dependencies - all actions use secure REST executor
 
 settings:
   num_results:
@@ -85,36 +83,16 @@ actions:
         type: string
         default: "never"
         description: "Freshness: never (fastest), fallback, preferred, always (slowest)"
-      include_domains:
-        type: string
-        description: Comma-separated domains to limit search to
-      exclude_domains:
-        type: string
-        description: Comma-separated domains to exclude
-    run: |
-      # Build JSON payload
-      INCLUDE_TEXT="${PARAM_INCLUDE_TEXT:-false}"
-      PAYLOAD=$(jq -n \
-        --arg query "$PARAM_QUERY" \
-        --argjson num "${PARAM_NUM_RESULTS:-5}" \
-        --arg type "${PARAM_TYPE:-auto}" \
-        --arg text "$INCLUDE_TEXT" \
-        --arg livecrawl "${PARAM_LIVECRAWL:-never}" \
-        --arg include "$PARAM_INCLUDE_DOMAINS" \
-        --arg exclude "$PARAM_EXCLUDE_DOMAINS" \
-        '{
-          query: $query,
-          numResults: $num,
-          type: $type
-        }
-        + (if $text == "true" then {contents: {text: true, livecrawl: $livecrawl}} else {} end)
-        + (if $include != "" then {includeDomains: ($include | split(",") | map(gsub("^\\s+|\\s+$"; "")))} else {} end)
-        + (if $exclude != "" then {excludeDomains: ($exclude | split(",") | map(gsub("^\\s+|\\s+$"; "")))} else {} end)')
-      
-      curl -s -m 30 -X POST "https://api.exa.ai/search" \
-        -H "x-api-key: $AUTH_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "$PAYLOAD" | jq .
+    rest:
+      method: POST
+      url: https://api.exa.ai/search
+      body:
+        query: $PARAM_QUERY
+        numResults: $PARAM_NUM_RESULTS
+        type: $PARAM_TYPE
+        contents:
+          text: $PARAM_INCLUDE_TEXT
+          livecrawl: $PARAM_LIVECRAWL
 
   search_urls:
     readonly: true
@@ -132,40 +110,34 @@ actions:
         type: string
         default: "auto"
         description: "Search type: auto, neural, or keyword"
-    run: |
-      curl -s -m 15 -X POST "https://api.exa.ai/search" \
-        -H "x-api-key: $AUTH_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "{
-          \"query\": \"$PARAM_QUERY\",
-          \"numResults\": ${PARAM_NUM_RESULTS:-5},
-          \"type\": \"${PARAM_TYPE:-auto}\"
-        }" | jq -r '.results[] | "\(.title)\n  \(.url)\n"'
+    rest:
+      method: POST
+      url: https://api.exa.ai/search
+      body:
+        query: $PARAM_QUERY
+        numResults: $PARAM_NUM_RESULTS
+        type: $PARAM_TYPE
 
   extract:
     readonly: true
-    description: Extract content from URLs
+    description: Extract content from a URL
     params:
-      urls:
+      url:
         type: string
         required: true
-        description: Comma-separated URLs to extract content from
+        description: URL to extract content from (call multiple times for multiple URLs)
       livecrawl:
         type: string
         default: "never"
         description: "Freshness: never (fastest), fallback, always (slowest)"
-    run: |
-      # Convert comma-separated URLs to JSON array
-      URLS_JSON=$(echo "$PARAM_URLS" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$"; ""))')
-      
-      curl -s -m 45 -X POST "https://api.exa.ai/contents" \
-        -H "x-api-key: $AUTH_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "{
-          \"urls\": $URLS_JSON,
-          \"text\": true,
-          \"livecrawl\": \"${PARAM_LIVECRAWL:-never}\"
-        }" | jq .
+    rest:
+      method: POST
+      url: https://api.exa.ai/contents
+      body:
+        urls:
+          - $PARAM_URL
+        text: true
+        livecrawl: $PARAM_LIVECRAWL
 
   find_similar:
     readonly: true
@@ -183,27 +155,23 @@ actions:
         type: boolean
         default: "false"
         description: Include page text content (slower)
-    run: |
-      INCLUDE_TEXT="${PARAM_INCLUDE_TEXT:-false}"
-      PAYLOAD=$(jq -n \
-        --arg url "$PARAM_URL" \
-        --argjson num "${PARAM_NUM_RESULTS:-5}" \
-        --arg text "$INCLUDE_TEXT" \
-        '{
-          url: $url,
-          numResults: $num
-        }
-        + (if $text == "true" then {contents: {text: true, livecrawl: "never"}} else {} end)')
-      
-      curl -s -m 30 -X POST "https://api.exa.ai/findSimilar" \
-        -H "x-api-key: $AUTH_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d "$PAYLOAD" | jq .
+    rest:
+      method: POST
+      url: https://api.exa.ai/findSimilar
+      body:
+        url: $PARAM_URL
+        numResults: $PARAM_NUM_RESULTS
+        contents:
+          text: $PARAM_INCLUDE_TEXT
 ---
 
 # Exa
 
 Semantic web search and content extraction. Neural search finds content by meaning, not just keywords.
+
+## Security
+
+This plugin uses AgentOS secure REST executor. Credentials are never exposed to scripts - AgentOS injects them directly into API requests.
 
 ## Recommended Workflow
 
@@ -251,18 +219,14 @@ params: {query: "latest AI news", include_text: true, livecrawl: "always"}
 ```
 
 ### extract
-Get content from specific URLs.
+Get content from a URL.
 
 ```
 tool: extract
-params: {urls: "https://docs.exa.ai/reference/search"}
+params: {url: "https://docs.exa.ai/reference/search"}
 ```
 
-Multiple URLs:
-```
-tool: extract
-params: {urls: "https://example.com/page1,https://example.com/page2"}
-```
+For multiple URLs, call extract multiple times or use `search` with `include_text: true`.
 
 ### find_similar
 Find pages similar to a URL.
