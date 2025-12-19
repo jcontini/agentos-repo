@@ -11,6 +11,8 @@ auth:
   type: api_key
   header: Authorization
   prefix: "Bearer "
+  label: API Token
+  help_url: https://todoist.com/help/articles/find-your-api-token-Jpzx9IIlB
 
 # No shell dependencies - all actions use secure REST executor
 
