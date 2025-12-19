@@ -13,11 +13,48 @@ requires:
       macos: brew install tree
       linux: sudo apt install -y tree
       windows: choco install tree -y
+  - name: pdftotext
+    optional: true
+    install:
+      macos: brew install poppler
+      linux: sudo apt install -y poppler-utils
+    description: Required for reading PDF files
 
 helpers: |
   # macOS-specific helpers
   is_url() { [[ "$1" == http* ]] || [[ "$1" == maps://* ]]; }
   is_app() { [ -d "/Applications/$1.app" ] || [[ "$1" == *.app ]]; }
+  
+  # Extract text from special file formats
+  extract_pdf() {
+    if command -v pdftotext &>/dev/null; then
+      pdftotext -layout "$1" -
+    else
+      echo "(PDF reading requires pdftotext: brew install poppler)"
+    fi
+  }
+  
+  extract_docx() {
+    # macOS has built-in textutil
+    if command -v textutil &>/dev/null; then
+      textutil -convert txt -stdout "$1"
+    elif command -v pandoc &>/dev/null; then
+      pandoc -t plain "$1"
+    else
+      echo "(DOCX reading requires textutil or pandoc)"
+    fi
+  }
+  
+  extract_xlsx() {
+    # Try xlsx2csv first, then in2csv (csvkit)
+    if command -v xlsx2csv &>/dev/null; then
+      xlsx2csv "$1"
+    elif command -v in2csv &>/dev/null; then
+      in2csv "$1"
+    else
+      echo "(XLSX reading requires xlsx2csv: pip install xlsx2csv)"
+    fi
+  }
 
 actions:
   open:
@@ -105,29 +142,70 @@ actions:
       
       # Show contents for text files (unless info-only)
       if [ "$PARAM_INFO_ONLY" != "true" ] && [ "$TYPE" = "file" ]; then
-        case "$MIME" in
-          text/*|application/json|application/javascript|application/xml|application/x-sh|application/x-shellscript)
+        # First check for special formats by extension
+        case "$EXT" in
+          pdf)
+            echo ""
+            echo "--- Contents (extracted from PDF) ---"
+            extract_pdf "$PARAM_PATH"
+            ;;
+          docx)
+            echo ""
+            echo "--- Contents (extracted from DOCX) ---"
+            extract_docx "$PARAM_PATH"
+            ;;
+          xlsx|xls)
+            echo ""
+            echo "--- Contents (extracted from spreadsheet) ---"
+            extract_xlsx "$PARAM_PATH"
+            ;;
+          csv)
             echo ""
             echo "--- Contents ---"
             cat "$PARAM_PATH"
             ;;
-          application/octet-stream)
-            # Check extension for common text files
-            case "$EXT" in
-              md|txt|js|ts|jsx|tsx|py|rb|go|rs|sh|bash|zsh|yaml|yml|toml|ini|cfg|conf|html|css|scss|less|sql|graphql|vue|svelte)
+          *)
+            # Fall back to MIME type detection for text files
+            case "$MIME" in
+              text/*|application/json|application/javascript|application/xml|application/x-sh|application/x-shellscript)
                 echo ""
                 echo "--- Contents ---"
                 cat "$PARAM_PATH"
+                ;;
+              application/octet-stream)
+                # Check extension for common text files
+                case "$EXT" in
+                  md|txt|js|ts|jsx|tsx|py|rb|go|rs|sh|bash|zsh|yaml|yml|toml|ini|cfg|conf|html|css|scss|less|sql|graphql|vue|svelte)
+                    echo ""
+                    echo "--- Contents ---"
+                    cat "$PARAM_PATH"
+                    ;;
+                  *)
+                    echo ""
+                    echo "(Binary file - use 'open' to view)"
+                    ;;
+                esac
+                ;;
+              application/pdf)
+                echo ""
+                echo "--- Contents (extracted from PDF) ---"
+                extract_pdf "$PARAM_PATH"
+                ;;
+              application/vnd.openxmlformats-officedocument.wordprocessingml.document)
+                echo ""
+                echo "--- Contents (extracted from DOCX) ---"
+                extract_docx "$PARAM_PATH"
+                ;;
+              application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|application/vnd.ms-excel)
+                echo ""
+                echo "--- Contents (extracted from spreadsheet) ---"
+                extract_xlsx "$PARAM_PATH"
                 ;;
               *)
                 echo ""
                 echo "(Binary file - use 'open' to view)"
                 ;;
             esac
-            ;;
-          *)
-            echo ""
-            echo "(Binary file - use 'open' to view)"
             ;;
         esac
       fi
@@ -410,13 +488,34 @@ params: {path: ".", tree: true, depth: 2}
 ```
 
 ### read
-Read file metadata and contents. For text files, shows both info and contents by default.
+Read file metadata and contents. Supports text files, PDFs, Word docs, and Excel spreadsheets.
 
-**Read a file:**
+**Read a text file:**
 ```
 action: read
 params: {path: "/Users/joe/Documents/notes.md"}
 ```
+
+**Read a PDF:**
+```
+action: read
+params: {path: "/Users/joe/Documents/report.pdf"}
+```
+Requires `pdftotext` (`brew install poppler`).
+
+**Read a Word document:**
+```
+action: read
+params: {path: "/Users/joe/Documents/document.docx"}
+```
+Uses macOS built-in `textutil` (no install needed).
+
+**Read an Excel spreadsheet:**
+```
+action: read
+params: {path: "/Users/joe/Documents/data.xlsx"}
+```
+Requires `xlsx2csv` (`pip install xlsx2csv`).
 
 **Info only (skip contents):**
 ```
@@ -424,7 +523,11 @@ action: read
 params: {path: "/Users/joe/Documents/large-file.json", info-only: true}
 ```
 
-Output includes: Type, MIME type, Size, Extension, and Contents (for text files).
+**Supported formats:**
+- Text: .txt, .md, .json, .yaml, .xml, .csv, code files
+- PDF: .pdf (requires pdftotext)
+- Word: .docx (uses textutil)
+- Excel: .xlsx, .xls (requires xlsx2csv)
 
 ### file
 Filesystem operations for files and directories.
