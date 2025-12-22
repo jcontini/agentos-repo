@@ -412,3 +412,4 @@ Or use the **Share** → **Copy Link** and convert:
 - Cannot manage playlists or library (would require Web API + OAuth)
 - Cannot see queue or add to queue (would require Web API + OAuth)
 - Cannot "like" the current track (Spotify doesn't expose this via AppleScript)
+

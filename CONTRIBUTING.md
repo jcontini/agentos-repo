@@ -30,13 +30,13 @@ This blocks commits that contain security vulnerabilities.
 1. Fork this repo
 2. **Enable the security hook**: `git config core.hooksPath .githooks`
 3. Set your fork as the apps source in AgentOS → Settings → Developer
-4. Create your app in `apps/{id}/app.md`
+4. Create your app in `apps/{id}/README.md`
 5. Test locally (changes hot-reload)
 6. Submit a PR
 
 ## App Structure
 
-Apps live in `apps/{id}/app.md` with YAML frontmatter + markdown body.
+Apps live in `apps/{id}/README.md` with YAML frontmatter + markdown body.
 
 ```yaml
 ---
