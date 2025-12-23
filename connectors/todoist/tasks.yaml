@@ -76,6 +76,8 @@ actions:
         description: "{{params.description}}"
         due_string: "{{params.due}}"
         priority: "{{params.priority | invert:5}}"  # Our 1=urgent → Todoist 4
+        labels: "{{params.labels}}"
+        # Note: project_id not supported in update - use Sync API to move tasks
       response:
         mapping:
           id: ".id"
