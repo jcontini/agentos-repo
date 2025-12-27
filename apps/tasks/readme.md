@@ -301,10 +301,10 @@ actions:
   add_blocker:
     description: Set one task as blocking another (task cannot proceed until blocker is done)
     params:
-      task_id:
+      id:
         type: string
         required: true
-        description: Task that is blocked
+        description: Task ID (task that is blocked)
       blocker_id:
         type: string
         required: true
@@ -317,10 +317,10 @@ actions:
   remove_blocker:
     description: Remove a blocking relationship
     params:
-      task_id:
+      id:
         type: string
         required: true
-        description: Task that was blocked
+        description: Task ID (task that was blocked)
       blocker_id:
         type: string
         required: true
@@ -333,9 +333,10 @@ actions:
   add_related:
     description: Link two tasks as related
     params:
-      task_id:
+      id:
         type: string
         required: true
+        description: Task ID
       related_id:
         type: string
         required: true
@@ -347,9 +348,10 @@ actions:
   remove_related:
     description: Remove a related link between tasks
     params:
-      task_id:
+      id:
         type: string
         required: true
+        description: Task ID
       related_id:
         type: string
         required: true

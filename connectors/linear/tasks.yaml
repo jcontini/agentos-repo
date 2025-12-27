@@ -349,7 +349,7 @@ actions:
       variables:
         input:
           issueId: "{{params.blocker_id}}"
-          relatedIssueId: "{{params.task_id}}"
+          relatedIssueId: "{{params.id}}"
           type: blocks
       response:
         root: "data.issueRelationCreate"
@@ -367,7 +367,7 @@ actions:
         }
       variables:
         issueId: "{{params.blocker_id}}"
-        relatedIssueId: "{{params.task_id}}"
+        relatedIssueId: "{{params.id}}"
       response:
         root: "data.issueRelationDelete"
         mapping:
@@ -385,7 +385,7 @@ actions:
         }
       variables:
         input:
-          issueId: "{{params.task_id}}"
+          issueId: "{{params.id}}"
           relatedIssueId: "{{params.related_id}}"
           type: related
       response:
@@ -403,7 +403,7 @@ actions:
           }
         }
       variables:
-        issueId: "{{params.task_id}}"
+        issueId: "{{params.id}}"
         relatedIssueId: "{{params.related_id}}"
       response:
         root: "data.issueRelationDelete"
