@@ -56,5 +56,3 @@ actions:
         name: "'{{params.table}}'"
         schema: "'public'"
         columns: "."
-
-

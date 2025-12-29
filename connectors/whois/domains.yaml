@@ -1,0 +1,20 @@
+# WHOIS → Domains app mapping
+# Uses system whois command (pre-installed on macOS/Linux)
+# Returns raw text output - AI interprets the structured data
+
+actions:
+  whois:
+    label: "WHOIS lookup"
+    command:
+      binary: whois
+      args:
+        - "{{params.domain}}"
+      timeout: 30
+
+  check:
+    label: "Check availability"
+    command:
+      binary: whois
+      args:
+        - "{{params.domain}}"
+      timeout: 15

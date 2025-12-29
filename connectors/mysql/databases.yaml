@@ -48,5 +48,3 @@ actions:
         name: "'{{params.table}}'"
         schema: "null"
         columns: "."
-
-

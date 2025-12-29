@@ -46,5 +46,3 @@ actions:
             default: .dflt_value,
             primary_key: (.pk == 1)
           }]
-
-
