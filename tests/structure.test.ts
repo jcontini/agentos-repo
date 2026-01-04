@@ -62,21 +62,22 @@ describe('App Structure', () => {
       }
     });
 
-    // Data apps should have schema.sql
-    it('data apps have schema.sql', () => {
-      const schemaPath = join(appDir, 'schema.sql');
+    // Data apps should have schema: in readme.md (YAML defines the database tables)
+    it('data apps have schema in readme', () => {
       const readmePath = join(appDir, 'readme.md');
       
-      // If readme explicitly mentions schema.sql or "local database", it's a data app
-      // Don't trigger on "database" alone (the Databases app queries external DBs)
       if (existsSync(readmePath)) {
-        const readme = readFileSync(readmePath, 'utf-8').toLowerCase();
-        const isDataApp = readme.includes('schema.sql') || 
-                          readme.includes('local database') ||
-                          readme.includes('per-app database');
+        const readme = readFileSync(readmePath, 'utf-8');
+        const readmeLower = readme.toLowerCase();
+        
+        // If readme mentions "local database" or "per-app database", it's a data app
+        // Don't trigger on "database" alone (the Databases app queries external DBs)
+        const isDataApp = readmeLower.includes('local database') ||
+                          readmeLower.includes('per-app database');
         
         if (isDataApp) {
-          expect(existsSync(schemaPath)).toBe(true);
+          // Should have schema: section in the YAML front matter
+          expect(readme).toMatch(/^schema:/m);
         }
       }
     });

@@ -52,8 +52,8 @@ describe('Books App', () => {
   });
 
   describe('Get/Update/Delete', () => {
-    // Note: Books app doesn't have a 'create' action - books are added via import.
-    // These tests use existing imported books.
+    // Note: Books app doesn't have a 'create' action - books are added via pull.
+    // These tests use existing pulled books.
     
     it('can get a book by ID', async () => {
       // Get any existing book
@@ -103,8 +103,6 @@ describe('Books App', () => {
         expect(book.id).toBeDefined();
         expect(book.title).toBeDefined();
         expect(book.status).toBeDefined();
-        expect(book.source_connector).toBeDefined();
-        expect(book.source_id).toBeDefined();
 
         // Status should be valid
         expect(['want_to_read', 'reading', 'read', 'dnf', 'none']).toContain(book.status);
@@ -117,14 +115,20 @@ describe('Books App', () => {
       }
     });
 
-    it('books have source tracking', async () => {
+    it('books have refs for external references', async () => {
       const books = await aos().books.list({ limit: 10 });
 
       for (const book of books) {
-        expect(typeof book.source_connector).toBe('string');
-        expect(typeof book.source_id).toBe('string');
-        expect(book.source_connector.length).toBeGreaterThan(0);
-        expect(book.source_id.length).toBeGreaterThan(0);
+        // Books should have refs object (may be empty for locally-created books)
+        expect(book.refs).toBeDefined();
+        expect(typeof book.refs).toBe('object');
+        
+        // If pulled from a connector, should have at least one ref
+        if (book.refs && Object.keys(book.refs).length > 0) {
+          // At least one ref should be non-empty
+          const hasValidRef = Object.values(book.refs).some(v => v != null && v !== '');
+          expect(hasValidRef).toBe(true);
+        }
       }
     });
   });

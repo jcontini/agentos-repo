@@ -12,8 +12,7 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │  APPS: Tasks • Books • Messages • Calendar • Finance • Databases   │
 │  Location: apps/{app}/                                              │
-│    - readme.md: schema, actions, params, returns                    │
-│    - schema.sql: database tables (optional, for data apps)          │
+│    - readme.md: schema (YAML), actions, params, returns             │
 │    - icon.svg: app icon                                             │
 └─────────────────────────────────────────────────────────────────────┘
                               │
@@ -269,7 +268,7 @@ app:
 app:
   action: upsert
   table: books
-  on_conflict: [source_connector, source_id]
+  on_conflict: refs.goodreads  # or refs.isbn, etc.
 ```
 
 ### `command:` — CLI tools (firewall-controlled)
@@ -642,8 +641,7 @@ Contributors write **YAML configs + tests**. That's it. The MCP client talks to 
 integrations/
   apps/
     books/
-      schema.sql
-      readme.md
+      readme.md                       ← Schema in YAML (auto-generates DB)
       icon.svg
       tests/                          ← App tests
         books.test.ts
@@ -836,7 +834,7 @@ await aos().call('Books', { action: 'list', params: { status: 'read' } });
 
 // cleanupTestData() - Remove test records after tests
 await cleanupTestData('Books');  // Removes items with [TEST] prefix
-await cleanupTestData('Books', (b) => b.source_connector === 'goodreads');
+await cleanupTestData('Books', (b) => b.refs?.goodreads != null);
 
 // testContent() - Generate unique test content
 const title = testContent('My Book');  // "[TEST] My Book 1704312000000_abc123"
@@ -897,7 +895,7 @@ npm test -- tests/structure.test.ts
 | Has `readme.md` | Has `readme.md` | Uses `viewBox` |
 | Has `icon.svg` | Has yaml or icon | Uses `currentColor` |
 | Valid SVG icon | Yaml references valid app | Under 5KB |
-| Data apps have `schema.sql` | | No hardcoded colors |
+| Data apps have `schema:` in readme | | No hardcoded colors |
 
 These tests run automatically with `npm test` - you don't need to write them.
 
