@@ -1,0 +1,2 @@
+# Run structure validation on commit
+npm test -- tests/structure.test.ts --run
