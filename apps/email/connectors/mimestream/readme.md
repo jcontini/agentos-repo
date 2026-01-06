@@ -2,7 +2,7 @@
 id: mimestream
 name: Mimestream
 description: Read emails from Mimestream macOS email client
-icon: icon.svg
+icon: icon.png
 color: "#3B82F6"
 
 website: https://mimestream.com

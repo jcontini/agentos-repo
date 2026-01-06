@@ -2,7 +2,7 @@
 id: mysql
 name: MySQL
 description: Connect to MySQL and MariaDB databases
-icon: icon.svg
+icon: icon.png
 color: "#4479A1"
 
 website: https://www.mysql.com

@@ -2,7 +2,7 @@
 id: reddit
 name: Reddit
 description: Read public Reddit communities, posts, and comments
-icon: icon.svg
+icon: icon.png
 color: "#FF4500"
 
 website: https://reddit.com
