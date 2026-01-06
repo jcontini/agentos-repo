@@ -232,14 +232,168 @@ actions:
         default: 50
     returns: message[]
 
+  # ============================================================================
+  # WRITE ACTIONS
+  # ============================================================================
+
+  send:
+    description: Send a message to a conversation
+    params:
+      conversation_id:
+        type: string
+        required: true
+        description: Conversation to send to
+      text:
+        type: string
+        required: true
+        description: Message text content
+      reply_to:
+        type: string
+        description: Message ID to reply to (optional)
+    returns: message
+
+  send_to_user:
+    description: Start a new conversation with a user
+    params:
+      user_id:
+        type: string
+        required: true
+        description: User ID or handle to message
+      text:
+        type: string
+        required: true
+        description: Message text content
+    returns: message
+
+  react:
+    description: Add an emoji reaction to a message
+    params:
+      conversation_id:
+        type: string
+        required: true
+      message_id:
+        type: string
+        required: true
+      emoji:
+        type: string
+        required: true
+        description: Emoji to react with (e.g. "❤️", "👍", "😂")
+    returns: { success: boolean }
+
+  unreact:
+    description: Remove a reaction from a message
+    params:
+      conversation_id:
+        type: string
+        required: true
+      message_id:
+        type: string
+        required: true
+      emoji:
+        type: string
+        description: Specific emoji to remove (optional, removes all if omitted)
+    returns: { success: boolean }
+
+  mark_read:
+    description: Mark a message or conversation as read
+    params:
+      conversation_id:
+        type: string
+        required: true
+      message_id:
+        type: string
+        description: Specific message to mark read (optional, marks latest if omitted)
+    returns: { success: boolean }
+
+  mark_unread:
+    description: Mark a conversation as unread
+    params:
+      conversation_id:
+        type: string
+        required: true
+    returns: { success: boolean }
+
+  delete:
+    description: Delete/unsend a message
+    params:
+      conversation_id:
+        type: string
+        required: true
+      message_id:
+        type: string
+        required: true
+    returns: { success: boolean }
+
+  # ============================================================================
+  # CONVERSATION ACTIONS
+  # ============================================================================
+
+  mute:
+    description: Mute notifications for a conversation
+    params:
+      conversation_id:
+        type: string
+        required: true
+    returns: { success: boolean }
+
+  unmute:
+    description: Unmute notifications for a conversation
+    params:
+      conversation_id:
+        type: string
+        required: true
+    returns: { success: boolean }
+
+  archive:
+    description: Archive/hide a conversation
+    params:
+      conversation_id:
+        type: string
+        required: true
+    returns: { success: boolean }
+
+  # ============================================================================
+  # PRESENCE & TYPING
+  # ============================================================================
+
+  get_presence:
+    description: Get online/active status of users
+    readonly: true
+    params:
+      user_ids:
+        type: array
+        items: { type: string }
+        description: User IDs to check presence for
+    returns:
+      - user_id: string
+        is_active: boolean
+        last_active_at: datetime
+
+  send_typing:
+    description: Send typing indicator to a conversation
+    params:
+      conversation_id:
+        type: string
+        required: true
+    returns: { success: boolean }
+
 instructions: |
   When working with messages:
-  - All message connectors are read-only (no sending)
-  - Use connector: "imessage" for iMessage/SMS
-  - Use connector: "whatsapp" for WhatsApp
-  - Use connector: "cursor" for AI chat history
+  - Use connector: "imessage" for iMessage/SMS (read-only)
+  - Use connector: "whatsapp" for WhatsApp (read-only)
+  - Use connector: "instagram" for Instagram DMs (read + write)
+  - Use connector: "cursor" for AI chat history (read-only)
+  
+  For connectors that support write:
+  - Use send() to reply in an existing conversation
+  - Use send_to_user() to start a new conversation
+  - Use react() / unreact() for emoji reactions
+  - Use mark_read() / mark_unread() for read status
+  
+  Notes:
   - Phone numbers are in E.164 format: +1XXXXXXXXXX
   - Timestamps are ISO 8601 UTC
+  - Not all connectors support all write actions
 ---
 
 # Messages
@@ -309,16 +463,70 @@ messages.get_unread(connector: "whatsapp")
 
 ## Connectors
 
-| Connector | Platform | Features |
-|-----------|----------|----------|
-| `imessage` | iMessage, SMS, RCS | Read messages, attachments, read receipts |
-| `whatsapp` | WhatsApp | Read messages, group participants |
-| `cursor` | Cursor AI | Read AI chat history |
+| Connector | Platform | Read | Write | Auth |
+|-----------|----------|------|-------|------|
+| `imessage` | iMessage, SMS, RCS | ✅ | ❌ | Local DB |
+| `whatsapp` | WhatsApp | ✅ | ❌ | Local DB |
+| `instagram` | Instagram DMs | ✅ | ✅ | Browser login |
+| `cursor` | Cursor AI | ✅ | ❌ | Local DB |
+
+### Write Action Support by Connector
+
+| Action | Instagram | iMessage | WhatsApp | Cursor |
+|--------|-----------|----------|----------|--------|
+| `send` | ✅ | ❌ | ❌ | ❌ |
+| `send_to_user` | ✅ | ❌ | ❌ | ❌ |
+| `react` | ✅ | ❌ | ❌ | ❌ |
+| `unreact` | ✅ | ❌ | ❌ | ❌ |
+| `mark_read` | ✅ | ❌ | ❌ | ❌ |
+| `mark_unread` | ✅ | ❌ | ❌ | ❌ |
+| `delete` | ✅ | ❌ | ❌ | ❌ |
+| `mute` | ✅ | ❌ | ❌ | ❌ |
+| `unmute` | ✅ | ❌ | ❌ | ❌ |
+| `send_typing` | ✅ | ❌ | ❌ | ❌ |
+| `get_presence` | ✅ | ❌ | ❌ | ❌ |
+
+## Write Actions
+
+### send
+
+Send a message to an existing conversation.
+
+```
+messages.send(connector: "instagram", conversation_id: "123", text: "Hello!")
+```
+
+### send_to_user
+
+Start a new conversation with a user.
+
+```
+messages.send_to_user(connector: "instagram", user_id: "456", text: "Hey!")
+```
+
+### react
+
+Add an emoji reaction to a message.
+
+```
+messages.react(connector: "instagram", conversation_id: "123", 
+               message_id: "456", emoji: "❤️")
+```
+
+### mark_read / mark_unread
+
+Change read status.
+
+```
+messages.mark_read(connector: "instagram", conversation_id: "123", message_id: "456")
+messages.mark_unread(connector: "instagram", conversation_id: "123")
+```
 
 ## Tips
 
 - iMessage requires Full Disk Access permission on macOS
 - WhatsApp requires the desktop app to be installed
+- Instagram uses browser-based login (connects via Settings)
 - Cursor stores conversations as JSON in a SQLite key-value store
 - Group chats use `type: group` with `is_public: true/false`
 - Use `is_outgoing` to filter sent vs received messages

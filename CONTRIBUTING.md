@@ -167,6 +167,42 @@ actions:
 Human-readable docs about this connector.
 ```
 
+### Auth types
+
+| Type | Use case | Example |
+|------|----------|---------|
+| `api_key` | Services with API tokens | Linear, Todoist |
+| `oauth` | OAuth2 flows | Google, GitHub |
+| `cookies` | Browser session cookies | Instagram, Facebook |
+| (none) | Local databases, no auth | iMessage, WhatsApp |
+
+**API Key auth:**
+```yaml
+auth:
+  type: api_key
+  header: Authorization
+  prefix: "Bearer "
+  label: API Token
+  help_url: https://example.com/settings/api
+```
+
+**Cookie auth (with browser login):**
+```yaml
+auth:
+  type: cookies
+  domain: instagram.com
+  cookies: [sessionid, csrftoken, ds_user_id]
+  connect:
+    playwright:
+      # Browser automation steps (see Playwright executor)
+```
+
+**No auth (local databases):**
+```yaml
+# No auth block = no credentials needed
+database: "~/Library/Messages/chat.db"
+```
+
 ---
 
 ## Executors
@@ -179,6 +215,7 @@ Human-readable docs about this connector.
 | `sql:` | Database queries | `apps/databases/connectors/postgres/readme.md` |
 | `command:` | CLI tools | `apps/files/connectors/macos/readme.md` |
 | `swift:` | macOS Swift scripts | `apps/calendar/connectors/apple-calendar/readme.md` |
+| `playwright:` | Browser automation | `apps/messages/connectors/instagram/readme.md` |
 
 ### REST executor
 
@@ -255,6 +292,65 @@ actions:
 ```
 
 **See:** `apps/tasks/connectors/linear/readme.md` for real chained executor examples.
+
+### Playwright executor (browser automation)
+
+For connectors that require browser-based login (cookie auth):
+
+```yaml
+auth:
+  type: cookies
+  domain: example.com
+  cookies: [session, csrf_token]
+  
+  connect:
+    playwright:
+      launch:
+        headless: false  # User needs to see browser for 2FA
+        
+      steps:
+        # Navigate to login page
+        - goto: "https://example.com/login"
+        
+        # Wait for user to complete login
+        - wait_for:
+            any:
+              - url_matches: "https://example.com/dashboard"
+              - selector: "[data-logged-in]"
+            timeout: 300000  # 5 min for 2FA
+            
+        # Verify required cookies exist
+        - assert_cookies:
+            - session
+            - csrf_token
+            
+        # Extract cookies for storage
+        - extract_cookies:
+            names: [session, csrf_token, user_id]
+            
+        # Optional: extract data from page
+        - extract:
+            selector: ".username"
+            attribute: "textContent"
+            as: "username"
+            
+        - close
+        
+      on_success:
+        message: "Connected as {{username}}!"
+        
+      on_error:
+        timeout:
+          message: "Login timed out"
+```
+
+**Use cases:**
+- Services without API keys (Instagram, Facebook)
+- Cookie-based authentication
+- OAuth flows that can't be automated
+- Services requiring 2FA
+
+**See:** `apps/messages/connectors/instagram/readme.md` for full example.
 
 ---
 
