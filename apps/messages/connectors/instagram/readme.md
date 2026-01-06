@@ -22,34 +22,72 @@ auth:
     - mid            # Machine ID
     - ig_did         # Device ID
   
+  # Connect flow - all selectors verified Jan 2026
   connect:
     playwright:
       launch:
-        headless: false
+        headless: true
+        size: mobile
         
       steps:
+        # Step 1: Go to login page
         - goto: "https://www.instagram.com/accounts/login/"
+        - wait: 1500  # Wait for React to initialize
         
-        # Wait for successful login (redirected to home or DMs)
+        # Step 2: Fill credentials
+        - fill:
+            selector: 'input[name="username"]'
+            value: "{{username}}"
+        - fill:
+            selector: 'input[name="password"]'
+            value: "{{password}}"
+            
+        # Step 3: Click login
+        - click: 'button[type="submit"]'
+        
+        # Step 4: Wait for result (success, 2FA, or error)
         - wait_for:
             any:
               - url_matches: "instagram.com/$"
-              - url_matches: "instagram.com/direct"
-              - selector: "[aria-label='Home']"
+              - url_matches: "instagram.com/accounts/onetap"
+              - url_matches: "instagram.com/accounts/login/two_factor"
               - cookie: sessionid
-            timeout: 300000
-            
-        # Extract all the cookies we need
+            timeout: 30000
+        
+        # Step 5: Handle 2FA if present
+        # URL pattern: accounts/login/two_factor
+        # If 2FA page detected and {{two_factor_code}} provided:
+        - if_url_matches: "accounts/login/two_factor"
+          then:
+            - fill:
+                selector: 'input[name="verificationCode"]'
+                value: "{{two_factor_code}}"
+            - click: 'button:has-text("Confirm")'
+            - wait_for:
+                any:
+                  - url_matches: "instagram.com/$"
+                  - url_matches: "instagram.com/accounts/onetap"
+                  - cookie: sessionid
+                timeout: 15000
+        
+        # Step 6: Extract cookies (includes HttpOnly via context.cookies())
         - extract_cookies: [sessionid, csrftoken, ds_user_id, mid, ig_did]
-            
+        
         - close
+        
+      # 2FA detection - tells UI to prompt for code
+      two_factor:
+        detect:
+          url_matches: "accounts/login/two_factor"
+        input_selector: 'input[name="verificationCode"]'
+        submit_selector: 'button:has-text("Confirm")'
         
       on_success:
         message: "Connected to Instagram as @{{username}}!"
         
       on_error:
         challenge_required:
-          message: "Instagram requires verification. Please complete it in the browser."
+          message: "Instagram requires additional verification. Please try again later."
         timeout:
           message: "Login timed out. Please try again."
 
@@ -617,21 +655,21 @@ Full-featured Instagram DM connector with read and write support.
 
 | Feature | Implementation | Notes |
 |---------|---------------|-------|
-| **Browser-based login** | `scripts/playwright-runner.ts` | Opens mobile-sized Chromium, user logs in, cookies extracted |
-| **Cookie storage** | `~/.agentos/credentials.json` | Stored as `Credential::Cookies` type in JSON store |
+| **Username/password auth** | `scripts/playwright-runner.ts` | Headless login - user enters creds in UI, Playwright logs in behind the scenes |
+| **Cookie + credential storage** | `Credential::Cookies` with login fields | Cookies AND username/password stored in system keychain for auto-reconnect |
+| **Auto-reconnect** | `reconnect_session` command | When session expires, re-logs in automatically using stored credentials |
 | **Reading conversations** | REST API `list_conversations` | Returns real DM threads with participants, unread counts |
 | **Cookie auth injection** | `inject_provider_auth()` in apps.rs | Auto-adds `Cookie` + `X-CSRFToken` headers |
 | **Custom headers** | `RestExecutor.headers` field | Per-action headers (X-IG-App-ID, X-Requested-With, Referer) |
-| **Session refresh** | Re-run Playwright login | Manual process when session expires |
 
 ### 🔧 Known Issues to Fix
 
 | Issue | Solution | Priority |
 |-------|----------|----------|
 | **Cursor MCP credential loading** | Works in standalone mode but fails via Cursor MCP. Likely path or timing issue. | High |
+| **2FA handling** | Playwright runner detects 2FA prompts, need to surface to UI | High |
 | **Other read actions need headers** | Copy header pattern from `list_conversations` to `get`, `list`, `search`, etc. | Medium |
 | **Session expiry detection** | Implement `error_detection` config parsing in Rust | Medium |
-| **Full browser window** | Just added mobile size option - needs testing | Low |
 
 ### ❓ Research Needed / Unsure
 
@@ -639,26 +677,29 @@ Full-featured Instagram DM connector with read and write support.
 |-------|-------|
 | **Sending messages** | Instagram **blocks REST API writes** (invalidates session immediately). Mautrix-meta uses MQTToT websocket protocol. This is a significant undertaking. |
 | **Session lifetime** | Sessions expire quickly with "suspicious" API patterns. Need to understand rate limits. |
-| **Native Tauri webview** | Could replace Playwright with Tauri's built-in webview for truly native auth window. Would be reusable for OAuth flows too. |
-| **Username/password auth** | Could prompt for credentials in UI, automate login via Playwright. Need to handle 2FA. |
+| **TOTP 2FA codes** | Could auto-generate if user provides their TOTP secret. Need to research. |
 
 ### 📋 Next Steps (Prioritized)
 
-1. **Native Auth Window (UI)**
-   - Add `auth_type: cookies` support to AppsView.svelte "Add Account" modal
-   - Create Tauri command `open_auth_window(url, size)` that opens native webview
-   - Monitor for successful login (cookie appears), extract cookies, close window
-   - Much cleaner than spawning Playwright Chromium
+1. **Test username/password flow end-to-end**
+   - Verify headless Playwright login works with new credential flow
+   - Ensure cookies + credentials are stored properly
+   - Test auto-reconnect when session expires
 
-2. **Fix Cursor MCP credential loading**
+2. **2FA UI flow**
+   - When `needs_2fa: true` returned, show 2FA input in UI
+   - User enters code, retry login with 2FA code
+   - Future: TOTP auto-generation if user provides secret
+
+3. **Fix Cursor MCP credential loading**
    - Debug why credentials work in standalone but not via Cursor
    - May need to ensure credential file path is absolute
 
-3. **Complete read actions**
+4. **Complete read actions**
    - Add headers to remaining read actions: `get_conversation`, `list`, `get`, `search`, `get_unread`
    - Test each action works
 
-4. **Write operations (future)**
+5. **Write operations (future)**
    - Research MQTToT protocol (see mautrix-meta `pkg/messagix/socket/`)
    - May need websocket connection for real-time messaging
    - Alternative: explore if GraphQL endpoints work for writes
@@ -682,10 +723,10 @@ Full-featured Instagram DM connector with read and write support.
   ```
 
 - **Key Files in AgentOS**:
-  - `scripts/playwright-runner.ts` - Generic browser automation
-  - `src-tauri/src/credentials/mod.rs` - `Credential::Cookies` type
+  - `scripts/playwright-runner.ts` - Headless browser login with credential support
+  - `src-tauri/src/credentials/mod.rs` - `Credential::Cookies` with optional username/password
   - `src-tauri/src/apps.rs` - `inject_provider_auth()`, `RestExecutor.headers`
-  - `src-tauri/src/commands.rs` - `connect_connector` command
+  - `src-tauri/src/commands.rs` - `connect_with_credentials`, `reconnect_session` commands
 
 ---
 
