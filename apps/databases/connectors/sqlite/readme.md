@@ -24,6 +24,53 @@ instructions: |
   - No network connection needed
   - Uses sqlite_master for metadata queries
   - Supports both .sqlite and .db extensions
+
+# Action implementations (merged from mapping.yaml)
+actions:
+  query:
+    label: "Execute SQL query"
+    sql:
+      # Use |raw modifier to skip SQL escaping - the AI provides complete SQL queries
+      query: "{{params.sql | raw}}"
+      format: json
+    response:
+      mapping:
+        rows: "."
+        row_count: "length(.)"
+
+  tables:
+    label: "List tables"
+    readonly: true
+    sql:
+      query: |
+        SELECT name
+        FROM sqlite_master 
+        WHERE type = 'table'
+          AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+      format: json
+    response:
+      mapping: "[].name"
+
+  describe:
+    label: "Describe table"
+    readonly: true
+    sql:
+      # SQLite uses PRAGMA instead of information_schema
+      query: "PRAGMA table_info('{{params.table}}')"
+      format: json
+    response:
+      mapping:
+        name: "'{{params.table}}'"
+        schema: "null"
+        columns: |
+          [.[] | {
+            name: .name,
+            type: .type,
+            nullable: (.notnull == 0),
+            default: .dflt_value,
+            primary_key: (.pk == 1)
+          }]
 ---
 
 # SQLite

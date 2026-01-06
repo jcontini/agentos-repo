@@ -23,6 +23,55 @@ instructions: |
   - Default port is 3306
   - Use information_schema for metadata queries
   - For PlanetScale, use their provided connection string
+
+# Action implementations (merged from mapping.yaml)
+actions:
+  query:
+    label: "Execute SQL query"
+    sql:
+      # Use |raw modifier to skip SQL escaping - the AI provides complete SQL queries
+      query: "{{params.sql | raw}}"
+      format: json
+    response:
+      mapping:
+        rows: "."
+        row_count: "length(.)"
+
+  tables:
+    label: "List tables"
+    readonly: true
+    sql:
+      query: |
+        SELECT table_name as name
+        FROM information_schema.tables 
+        WHERE table_schema = DATABASE()
+          AND table_type = 'BASE TABLE'
+        ORDER BY table_name
+      format: json
+    response:
+      mapping: "[].name"
+
+  describe:
+    label: "Describe table"
+    readonly: true
+    sql:
+      query: |
+        SELECT 
+          column_name as name,
+          data_type as type,
+          is_nullable = 'YES' as nullable,
+          column_default as `default`,
+          column_key = 'PRI' as primary_key
+        FROM information_schema.columns
+        WHERE table_name = '{{params.table}}'
+          AND table_schema = DATABASE()
+        ORDER BY ordinal_position
+      format: json
+    response:
+      mapping:
+        name: "'{{params.table}}'"
+        schema: "null"
+        columns: "."
 ---
 
 # MySQL
