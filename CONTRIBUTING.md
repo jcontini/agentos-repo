@@ -4,236 +4,192 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  INTERFACES: MCP Server • HTTP API • CarPlay • Widgets • ...       │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  APPS: Tasks • Books • Messages • Calendar • Finance • Databases   │
+│  APPS: Tasks • Books • Messages • Calendar • Contacts • Finance    │
 │  Location: apps/{app}/readme.md                                     │
-│    - Schema defines the data contract                               │
-│    - Actions define what the app can do                             │
+│    - Schema: data contract                                          │
+│    - Actions: what the app can do + readonly flag                   │
 └─────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  CONNECTORS: todoist • linear • goodreads • postgres • copilot     │
+│  CONNECTORS: linear • todoist • apple-contacts • copilot • ...      │
 │  Location: apps/{app}/connectors/{connector}/readme.md              │
-│    - Auth config + action implementations in YAML frontmatter       │
-│    - Maps unified actions to service-specific APIs                  │
+│    - Auth config + action implementations                           │
 └─────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│  EXECUTORS: rest: • graphql: • sql: • csv: • command: • swift:     │
-│  Location: AgentOS Core (Rust) — you don't modify these            │
+│  EXECUTORS: rest • graphql • sql • swift • applescript • csv • ... │
+│  (Built into AgentOS Core - you configure them in YAML)            │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Every action requires a `connector` parameter:**
-```
-Tasks(action: "list", connector: "linear")    → Linear GraphQL API
-Books(action: "pull", connector: "goodreads") → Goodreads CSV import
-Finance(action: "list", connector: "copilot") → Copilot REST API
-```
-
 ---
 
-## File Structure
+## ⚠️ Key Concepts (Read First!)
 
-```
-apps/
-  books/
-    readme.md           ← Schema + actions
-    icon.svg            ← App icon (required)
-    connectors/
-      goodreads/
-        readme.md       ← Auth config + action implementations
-        icon.png
-      hardcover/
-        readme.md
-        icon.png
-    tests/
-      books.test.ts     ← App tests
-```
+### 1. `readonly` is defined at APP level, not connector
 
----
-
-## Creating an App
-
-**Reference:** See `apps/books/readme.md` for a complete example.
-
-### App readme.md structure
+Write protection comes from `apps/{app}/readme.md`, NOT the connector:
 
 ```yaml
----
-id: books
-name: Books
-description: Track your reading library
-icon: icon.svg
-color: "#8B4513"
-
-schema:
-  book:
-    id: { type: string, required: true }
-    title: { type: string, required: true }
-    # ... more fields
-
+# apps/contacts/readme.md  ← THIS is where readonly goes
 actions:
   list:
-    description: List books from library
-    readonly: true
-    params:
-      status: { type: string }
-      limit: { type: number, default: 50 }
-    returns: book[]
-  # ... actions define what the app can do
-
-instructions: |
-  Context for AI when using this app.
----
-
-# Human-readable documentation below the YAML frontmatter
+    description: List contacts
+    readonly: true  # ← Controls write protection
 ```
 
-### Schema field types
+If you get error `'action' is a write action`, add the action to the **app's** readme.md with `readonly: true`.
 
-| Type | Example | Notes |
-|------|---------|-------|
-| `string` | `title: { type: string }` | |
-| `number` | `rating: { type: number, min: 1, max: 5 }` | |
-| `boolean` | `completed: { type: boolean }` | |
-| `datetime` | `created_at: { type: datetime }` | ISO 8601 |
-| `enum` | `status: { type: enum, values: [a, b, c] }` | |
-| `array` | `tags: { type: array, items: { type: string } }` | |
-| `object` | `refs: { type: object }` | JSON blob |
+### 2. Template defaults need `| default:` syntax
 
-### Standard fields
-
-Every schema should include:
+The YAML `default:` on params does NOT auto-apply in templates:
 
 ```yaml
-id: { type: string, required: true }       # AgentOS internal ID
-refs: { type: object }                     # IDs in external systems
-metadata: { type: object }                 # Connector-specific extras
-created_at: { type: datetime }
-updated_at: { type: datetime }
+# ❌ WRONG - params.sort will be empty string if not provided
+ORDER BY CASE '{{params.sort}}' WHEN 'modified' THEN ...
+
+# ✅ CORRECT - defaults to 'modified' in the template itself
+ORDER BY CASE '{{params.sort | default: modified}}' WHEN 'modified' THEN ...
 ```
 
-**refs** = External IDs for dedup: `{ goodreads: "123", isbn: "978..." }`  
-**metadata** = Connector-specific data: `{ average_rating: 4.2, num_pages: 350 }`
+### 3. Restart AgentOS after YAML changes
+
+```bash
+./restart.sh cursor    # Toggle MCP config to force reload
+# OR
+pkill -9 agentos       # Kill process, will restart on next call
+```
 
 ---
 
-## Creating a Connector
+## Quick Reference
 
-**Reference:** See `apps/tasks/connectors/linear/readme.md` for GraphQL API, `apps/finance/connectors/copilot/readme.md` for REST API.
-
-### Connector structure
-
-```
-apps/books/connectors/goodreads/
-  readme.md       ← Auth config + action implementations (YAML frontmatter)
-  icon.png        ← Service icon
-```
-
-### Connector readme.md
-
-Everything goes in YAML frontmatter — auth config and action implementations:
-
-```yaml
----
-name: Linear
-auth:
-  type: api_key
-  header: Authorization
-  prefix: "Bearer "
-  label: API Token
-  help_url: https://linear.app/settings/api
-
-actions:
-  list:
-    graphql:
-      query: "{ items { id name } }"
-      response:
-        root: "data.items"
-        mapping:
-          id: "[].id"
-          title: "[].name"
----
-
-# Linear
-
-Human-readable docs about this connector.
-```
-
-### Auth types
-
-| Type | Use case | Example |
-|------|----------|---------|
-| `api_key` | Services with API tokens | Linear, Todoist |
-| `oauth` | OAuth2 flows | Google, GitHub |
-| `cookies` | Browser session cookies | Instagram, Facebook |
-| (none) | Local databases, no auth | iMessage, WhatsApp |
-
-**API Key auth:**
-```yaml
-auth:
-  type: api_key
-  header: Authorization
-  prefix: "Bearer "
-  label: API Token
-  help_url: https://example.com/settings/api
-```
-
-**Cookie auth (with browser login):**
-```yaml
-auth:
-  type: cookies
-  domain: instagram.com
-  cookies: [sessionid, csrftoken, ds_user_id]
-  connect:
-    playwright:
-      # Browser automation steps (see Playwright executor)
-```
-
-**No auth (local databases):**
-```yaml
-# No auth block = no credentials needed
-database: "~/Library/Messages/chat.db"
-```
+| To build... | Reference connector |
+|-------------|---------------------|
+| REST API | `apps/finance/connectors/copilot/readme.md` |
+| GraphQL API | `apps/tasks/connectors/linear/readme.md` |
+| Local SQLite + AppleScript | `apps/contacts/connectors/apple-contacts/readme.md` |
+| macOS Swift (EventKit, etc) | `apps/calendar/connectors/apple-calendar/readme.md` |
+| Browser automation | `apps/messages/connectors/instagram/readme.md` |
+| CSV import | `apps/books/connectors/goodreads/readme.md` |
 
 ---
 
 ## Executors
 
-| Executor | Use case | Example |
-|----------|----------|---------|
-| `rest:` | REST APIs | `apps/finance/connectors/copilot/readme.md` |
-| `graphql:` | GraphQL APIs | `apps/tasks/connectors/linear/readme.md` |
-| `csv:` | CSV file parsing | `apps/books/connectors/goodreads/readme.md` |
-| `sql:` | Database queries | `apps/contacts/connectors/apple-contacts/readme.md` |
-| `applescript:` | macOS Automation | `apps/contacts/connectors/apple-contacts/readme.md` |
-| `command:` | CLI tools | `apps/files/connectors/macos/readme.md` |
-| `swift:` | macOS Swift scripts | `apps/calendar/connectors/apple-calendar/readme.md` |
-| `playwright:` | Browser automation | `apps/messages/connectors/instagram/readme.md` |
+### `sql:` — Database Queries
 
-### REST executor
+**Reference:** `apps/contacts/connectors/apple-contacts/readme.md`
+
+```yaml
+sql:
+  database: "~/Library/Messages/chat.db"
+  query: |
+    SELECT * FROM message 
+    WHERE text LIKE '%{{params.query}}%'
+    LIMIT {{params.limit | default: 50}}
+  response:
+    mapping:
+      id: "[].ROWID"
+      text: "[].text"
+```
+
+**Key points:**
+- `database:` path supports templates: `"~/path/{{params.account}}/file.db"`
+- Use `| default:` in templates for default values
+- Glob patterns work: `"~/Sources/*/file.db"` queries ALL matches and merges results
+- For single-database queries, use explicit path (better for LIMIT accuracy)
+
+---
+
+### `swift:` — macOS Native APIs
+
+**Reference:** `apps/calendar/connectors/apple-calendar/readme.md`
+
+```yaml
+swift:
+  script: |
+    import Contacts
+    import Foundation
+    
+    let store = CNContactStore()
+    // ... Swift code here ...
+    
+    // Output JSON to stdout
+    print(jsonString)
+  response:
+    mapping:
+      id: "[].id"
+      name: "[].name"
+```
+
+**Key points:**
+- Scripts are compiled once and cached in `~/.agentos/cache/swift/`
+- Clear cache if changes aren't taking effect: `rm -rf ~/.agentos/cache/swift/*`
+- Output JSON to stdout, errors to stderr
+- Use for: EventKit (Calendar), CNContactStore (Contacts metadata), HealthKit, etc.
+
+**Apple ID gotcha:** CNContactStore returns IDs like `ABC-123:ABAccount` but filesystem uses just `ABC-123`:
+```swift
+let dirId = container.identifier.replacingOccurrences(of: ":ABAccount", with: "")
+```
+
+---
+
+### `applescript:` — macOS Automation
+
+**Reference:** `apps/contacts/connectors/apple-contacts/readme.md`
+
+```yaml
+applescript:
+  script: |
+    tell application "Contacts"
+      set p to make new person with properties {first name:"{{params.first_name}}"}
+      save
+      return "{\"id\":\"" & id of p & "\",\"status\":\"created\"}"
+    end tell
+  response:
+    mapping:
+      id: ".id"
+      status: ".status"
+```
+
+**Key points:**
+- Best for writes that need iCloud sync (Contacts, Reminders)
+- Return JSON string from AppleScript
+- Slower than SQL but more reliable for writes
+
+---
+
+### `rest:` — REST APIs
+
+**Reference:** `apps/finance/connectors/copilot/readme.md`
 
 ```yaml
 rest:
-  method: GET
+  method: POST
   url: "https://api.example.com/items/{{params.id}}"
   headers:
     X-Custom: "value"
-  body: { field: "{{params.value}}" }
+  body:
+    field: "{{params.value}}"
   response:
     mapping:
       id: ".id"
       title: ".name"
 ```
 
-### GraphQL executor
+**Key points:**
+- Templates work in `url`, `headers`, `body`, `query`
+- Auth headers injected automatically from connector auth config
+
+---
+
+### `graphql:` — GraphQL APIs
+
+**Reference:** `apps/tasks/connectors/linear/readme.md`
 
 ```yaml
 graphql:
@@ -250,287 +206,195 @@ graphql:
       title: ".name"
 ```
 
-### CSV executor
+---
+
+### `csv:` — CSV File Parsing
+
+**Reference:** `apps/books/connectors/goodreads/readme.md`
 
 ```yaml
 csv:
   path: "{{params.path}}"
   response:
     mapping:
-      title: "[].'Column Name'"
-      rating: "[].'Rating' | to_int"
+      title: "[].'Book Title'"
+      rating: "[].'My Rating' | to_int"
 ```
 
-### Chained executors
+---
+
+### `playwright:` — Browser Automation
+
+**Reference:** `apps/messages/connectors/instagram/readme.md`
+
+Used for cookie-based auth and services without APIs:
+
+```yaml
+auth:
+  type: cookies
+  domain: instagram.com
+  cookies: [sessionid, csrftoken]
+  connect:
+    playwright:
+      launch:
+        headless: false
+      steps:
+        - goto: "https://instagram.com/login"
+        - wait_for:
+            url_matches: "https://instagram.com/"
+            timeout: 300000
+        - extract_cookies:
+            names: [sessionid, csrftoken]
+```
+
+---
+
+### Chained Executors
 
 Chain multiple steps with `as:` to name outputs:
 
 ```yaml
 actions:
   complete:
-    # Step 1: Look up the completed state
     - graphql:
-        query: |
-          query($id: String!) {
-            issue(id: $id) {
-              team { states(filter: { type: { eq: "completed" } }) { nodes { id } } }
-            }
-          }
-        variables:
-          id: "{{params.id}}"
+        query: "{ issue(id: $id) { team { states { nodes { id } } } } }"
+        variables: { id: "{{params.id}}" }
       as: lookup
     
-    # Step 2: Use the lookup result
     - graphql:
-        query: |
-          mutation($id: String!, $input: IssueUpdateInput!) {
-            issueUpdate(id: $id, input: $input) { success }
-          }
+        query: "mutation { issueUpdate(id: $id, input: $input) { success } }"
         variables:
           id: "{{params.id}}"
           input:
             stateId: "{{lookup.data.issue.team.states.nodes[0].id}}"
 ```
 
-**See:** `apps/tasks/connectors/linear/readme.md` for real chained executor examples.
+---
 
-### Playwright executor (browser automation)
+## macOS Connector Pattern
 
-For connectors that require browser-based login (cookie auth):
+For local macOS data, use mixed executors:
 
-```yaml
-auth:
-  type: cookies
-  domain: example.com
-  cookies: [session, csrf_token]
-  
-  connect:
-    playwright:
-      launch:
-        headless: false  # User needs to see browser for 2FA
-        
-      steps:
-        # Navigate to login page
-        - goto: "https://example.com/login"
-        
-        # Wait for user to complete login
-        - wait_for:
-            any:
-              - url_matches: "https://example.com/dashboard"
-              - selector: "[data-logged-in]"
-            timeout: 300000  # 5 min for 2FA
-            
-        # Verify required cookies exist
-        - assert_cookies:
-            - session
-            - csrf_token
-            
-        # Extract cookies for storage
-        - extract_cookies:
-            names: [session, csrf_token, user_id]
-            
-        # Optional: extract data from page
-        - extract:
-            selector: ".username"
-            attribute: "textContent"
-            as: "username"
-            
-        - close
-        
-      on_success:
-        message: "Connected as {{username}}!"
-        
-      on_error:
-        timeout:
-          message: "Login timed out"
-```
+| Task | Executor | Why |
+|------|----------|-----|
+| List accounts/containers | `swift:` | Only way to get CNContactStore/EKEventStore metadata |
+| Fast reads | `sql:` | Direct SQLite is 10-100x faster |
+| Reliable writes | `applescript:` | Syncs properly with iCloud |
 
-**Use cases:**
-- Services without API keys (Instagram, Facebook)
-- Cookie-based authentication
-- OAuth flows that can't be automated
-- Services requiring 2FA
-
-**See:** `apps/messages/connectors/instagram/readme.md` for full example.
+**Example:** `apps/contacts/connectors/apple-contacts/readme.md` uses:
+- `swift:` for `accounts` action (list containers)
+- `sql:` for `list`, `search` (fast indexed queries)
+- `applescript:` for `create`, `update`, `delete`, `set_photo` (iCloud sync)
 
 ---
 
 ## Response Mapping
 
-Transform API responses to app schema:
-
 ```yaml
 response:
-  root: "data.items"          # Where to find the data
+  root: "data.items"       # Where to find data in response
   mapping:
-    # Direct field
-    id: ".id"
-    
-    # Array iteration (use [] prefix)
+    id: "[].id"            # Array iteration
     title: "[].name"
-    
-    # Transforms
-    authors: "[].author | to_array"
-    isbn: "[].isbn | strip_quotes"
-    rating: "[].rating | to_int"
-    
-    # Conditionals
-    status: ".done ? 'completed' : 'open'"
-    
-    # Complex conditionals
-    status: |
-      .state == 'finished' ? 'done' :
-      .state == 'working' ? 'in_progress' : 'open'
-    
-    # Static values
-    connector: "'goodreads'"
-    
-    # Nested objects
-    refs:
-      goodreads: "[].id"
-      isbn: "[].isbn | strip_quotes"
+    rating: "[].score | to_int"
+    connector: "'myconnector'"  # Static value (note quotes)
 ```
 
-### Built-in transforms
-
-| Transform | Description |
-|-----------|-------------|
-| `to_array` | Wrap single value in array |
-| `to_int` | Convert to integer |
-| `strip_quotes` | Remove `="..."` wrapper (CSV exports) |
-| `trim` | Remove whitespace |
-| `split:,` | Split string to array |
-| `nullif:0` | Return null if equals value |
-| `default:value` | Use value if null/empty |
-| `replace:from:to` | Text replacement |
+**Transforms:** `to_int`, `to_array`, `trim`, `strip_quotes`, `split:,`, `default:value`
 
 ---
 
-## Icons
+## Creating an App
 
-Every app and connector needs an icon.
+**Location:** `apps/{app}/readme.md`
 
-**Apps:** `icon.svg` — must use `viewBox` and `currentColor`  
-**Connectors:** `icon.png` or `icon.svg` — service branding
+```yaml
+---
+id: contacts
+name: Contacts
+schema:
+  contact:
+    id: { type: string, required: true }
+    first_name: { type: string }
+    # ...
 
-### App icon requirements
-
-```svg
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" 
-     fill="none" stroke="currentColor" stroke-width="2">
-  <path d="..."/>
-</svg>
+actions:
+  list:
+    description: List contacts
+    readonly: true  # ← READ-ONLY actions
+    params:
+      limit: { type: number, default: 50 }
+    returns: contact[]
+  
+  create:
+    description: Create contact
+    # No readonly = WRITE action (requires execute: true)
+    params:
+      first_name: { type: string }
+---
 ```
-
-- Use `viewBox` (scales properly)
-- Use `currentColor` (adapts to themes)
-- Under 5KB
-
-**Sources:** [Lucide](https://lucide.dev/), [Heroicons](https://heroicons.com/), [Tabler](https://tabler.io/icons)
 
 ---
 
-## Security
+## Creating a Connector
 
-**No shell scripts.** Connectors use declarative YAML only — credentials never leave Rust core.
+**Location:** `apps/{app}/connectors/{connector}/readme.md`
+
+```yaml
+---
+id: apple-contacts
+name: Apple Contacts
+
+# Auth (optional - omit for local databases)
+auth:
+  type: api_key
+  header: Authorization
+
+# Action implementations
+actions:
+  list:
+    sql:
+      database: "~/Library/AddressBook/..."
+      query: "SELECT * FROM ..."
+---
+```
 
 ---
 
 ## Testing
 
-See [TESTING.md](./TESTING.md) for the full testing guide.
+See [TESTING.md](./TESTING.md) for full guide.
 
-**Pre-commit hook enforces tests.** If you modify an app or connector, you must have tests for it.
-
-```bash
-npm install
-npm test                    # Run all tests
-npm test -- apps/books      # Run app tests
-npm test -- --watch         # Watch mode
-```
-
-### Test Data Convention
-
-Use `[TEST]` prefix for test data:
 ```typescript
-import { testContent, TEST_PREFIX } from '../../../tests/utils/fixtures';
+import { aos, testContent } from '../../../tests/utils/fixtures';
 
-const title = testContent('my task');  // → "[TEST] my task abc123"
+describe('My Connector', () => {
+  it('can list items', async () => {
+    const items = await aos().call('MyApp', {
+      action: 'list',
+      connector: 'my-connector',
+      params: { limit: 5 }
+    });
+    expect(items.length).toBe(5);
+  });
+});
 ```
+
+**Test data convention:** Use `[TEST]` prefix via `testContent('name')` → `"[TEST] name abc123"`
 
 ---
 
-## Quick Reference
+## File Structure
 
-| To do this... | Look at... |
-|--------------|------------|
-| Create an app | `apps/books/readme.md` |
-| Build a CSV connector | `apps/books/connectors/goodreads/readme.md` |
-| Build a GraphQL connector | `apps/tasks/connectors/linear/readme.md` |
-| Build a REST connector | `apps/finance/connectors/copilot/readme.md` |
-| Build a SQL + AppleScript connector | `apps/contacts/connectors/apple-contacts/readme.md` |
-| Build a Swift connector | `apps/calendar/connectors/apple-calendar/readme.md` |
-| Write tests | `apps/tasks/connectors/linear/tests/linear.test.ts` |
-
----
-
-## Key Concepts & Gotchas
-
-### readonly is defined at App level, not Connector level
-
-Write protection comes from `readonly: true` in `apps/{app}/readme.md` actions, **not** the connector:
-
-```yaml
-# apps/contacts/readme.md
-actions:
-  list:
-    description: List contacts
-    readonly: true  # ← This controls write protection
 ```
-
-If your new action errors with "'action' is a write action", add it to the **app's** readme.md with `readonly: true`.
-
-### Template defaults require `| default:` syntax
-
-The `default:` in YAML param definitions doesn't auto-apply to templates. Use pipe syntax:
-
-```yaml
-# ❌ Won't work - params.sort will be empty if not provided
-ORDER BY CASE '{{params.sort}}' WHEN 'modified' THEN ...
-
-# ✅ Works - defaults to 'modified' in template
-ORDER BY CASE '{{params.sort | default: modified}}' WHEN 'modified' THEN ...
+apps/
+  contacts/
+    readme.md           ← App schema + actions + readonly flags
+    icon.svg
+    connectors/
+      apple-contacts/
+        readme.md       ← Connector auth + action implementations
+        icon.png
+    tests/
+      contacts.test.ts
 ```
-
-### SQL database path supports templates
-
-The `sql.database` path can use `{{params.field}}`:
-
-```yaml
-sql:
-  database: "~/Library/AddressBook/Sources/{{params.account}}/AddressBook.db"
-  query: "SELECT * FROM contacts LIMIT {{params.limit | default: 50}}"
-```
-
-### macOS connector patterns
-
-For macOS native data (Contacts, Calendar), mix executors:
-
-| Task | Executor | Why |
-|------|----------|-----|
-| List accounts/containers | `swift:` | Only way to get CNContactStore metadata |
-| Fast reads | `sql:` | Direct SQLite is fastest |
-| Reliable writes | `applescript:` | Syncs properly with iCloud |
-
-See `apps/contacts/connectors/apple-contacts/readme.md` for full example.
-
-### Swift executor compiles and caches
-
-Inline Swift scripts are compiled once and cached in `~/.agentos/cache/swift/`. Clear this if your script changes aren't taking effect.
-
-### Apple container IDs need transformation
-
-`CNContactStore` returns IDs like `ABC-123:ABAccount` but filesystem uses just `ABC-123`. Strip the suffix in your Swift script:
-
-```swift
-let dirId = container.identifier.replacingOccurrences(of: ":ABAccount", with: "")
