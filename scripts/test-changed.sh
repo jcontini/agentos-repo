@@ -22,10 +22,6 @@ for arg in "$@"; do
   esac
 done
 
-# Always run structure tests (fast, validates layout)
-echo "📋 Running structure tests..."
-npm test -- tests/structure.test.ts --run
-
 if [ "$RUN_ALL" = true ]; then
   echo "🔄 Running all tests..."
   npm test -- --run
@@ -58,6 +54,14 @@ fi
 echo ""
 echo "📦 Changed apps: ${AFFECTED_APPS:-none}"
 echo "🔌 Changed connectors: ${AFFECTED_CONNECTORS:-none}"
+echo ""
+
+# Run structure tests only for changed apps/connectors
+echo "📋 Running structure tests for changed files..."
+STRUCTURE_FILTER=$(echo "$AFFECTED_APPS $AFFECTED_CONNECTORS" | tr ' ' '\n' | sed 's|apps/||' | sed "s|/connectors/|.*|" | paste -sd'|' -)
+if [ -n "$STRUCTURE_FILTER" ]; then
+  npm test -- tests/structure.test.ts --run -t "$STRUCTURE_FILTER" 2>/dev/null || npm test -- tests/structure.test.ts --run
+fi
 echo ""
 
 MISSING_TESTS=()
