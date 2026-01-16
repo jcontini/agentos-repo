@@ -1,0 +1,327 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentos.dev/schemas/connector.schema.json",
+  "title": "AgentOS Connector",
+  "description": "Schema for AgentOS connector readme.md frontmatter",
+  "type": "object",
+  "required": ["id", "name", "description", "tags", "actions"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier (lowercase, hyphenated)",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "description": {
+      "type": "string",
+      "description": "One-line description of what this connector does"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Icon filename (icon.svg or icon.png)",
+      "default": "icon.png"
+    },
+    "website": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the service's website"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Domain tags for discoverability (e.g., [tasks, issues])",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "auth": {
+      "oneOf": [
+        { "type": "null", "description": "No authentication required" },
+        { "$ref": "#/definitions/auth" }
+      ]
+    },
+    "api": {
+      "$ref": "#/definitions/api"
+    },
+    "database": {
+      "oneOf": [
+        { "type": "string", "description": "Path to SQLite database (supports ~ and globs)" },
+        {
+          "type": "object",
+          "description": "Platform-specific database paths",
+          "properties": {
+            "macos": { "type": "string" },
+            "windows": { "type": "string" },
+            "linux": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "provides": {
+      "type": "array",
+      "description": "Capabilities this connector provides",
+      "items": {
+        "type": "string",
+        "enum": ["search", "filesystem", "database", "browser"]
+      }
+    },
+    "actions": {
+      "type": "object",
+      "description": "Action implementations",
+      "additionalProperties": {
+        "$ref": "#/definitions/action"
+      }
+    }
+  },
+  "definitions": {
+    "auth": {
+      "type": "object",
+      "description": "Authentication configuration",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["api_key", "oauth", "cookies", "local_path", "connection_string", "none"],
+          "description": "Authentication type"
+        },
+        "domain": {
+          "type": "string",
+          "description": "Cookie domain (for cookies auth)"
+        },
+        "cookies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Required cookie names (for cookies auth)"
+        },
+        "header": {
+          "type": "string",
+          "description": "HTTP header name (e.g., Authorization)"
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Value prefix (e.g., 'Bearer ')"
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label for the credential input"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "Example value shown in input field"
+        },
+        "help_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL to documentation on how to get credentials"
+        }
+      }
+    },
+    "api": {
+      "type": "object",
+      "description": "API configuration",
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Base URL for REST endpoints"
+        },
+        "graphql": {
+          "type": "string",
+          "format": "uri",
+          "description": "GraphQL endpoint URL"
+        }
+      }
+    },
+    "action": {
+      "oneOf": [
+        { "$ref": "#/definitions/singleAction" },
+        {
+          "type": "array",
+          "description": "Chained actions (executed in sequence)",
+          "items": { "$ref": "#/definitions/singleAction" }
+        }
+      ]
+    },
+    "singleAction": {
+      "type": "object",
+      "description": "Single action implementation",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "Human-readable action label"
+        },
+        "readonly": {
+          "type": "boolean",
+          "description": "Whether this action only reads data (no side effects)",
+          "default": true
+        },
+        "params": {
+          "type": "object",
+          "description": "Action parameters",
+          "additionalProperties": {
+            "$ref": "#/definitions/paramDef"
+          }
+        },
+        "as": {
+          "type": "string",
+          "description": "Variable name for storing result in chained actions"
+        },
+        "rest": {
+          "$ref": "#/definitions/restExecutor"
+        },
+        "graphql": {
+          "$ref": "#/definitions/graphqlExecutor"
+        },
+        "sql": {
+          "$ref": "#/definitions/sqlExecutor"
+        },
+        "command": {
+          "$ref": "#/definitions/commandExecutor"
+        },
+        "swift": {
+          "$ref": "#/definitions/swiftExecutor"
+        }
+      }
+    },
+    "paramDef": {
+      "type": "object",
+      "description": "Parameter definition",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Parameter type"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether parameter is required"
+        },
+        "default": {
+          "description": "Default value if not provided"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description"
+        },
+        "example": {
+          "description": "Example value"
+        },
+        "enum": {
+          "type": "array",
+          "description": "Allowed values"
+        }
+      }
+    },
+    "restExecutor": {
+      "type": "object",
+      "description": "REST API call",
+      "required": ["url"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+          "default": "GET"
+        },
+        "url": {
+          "type": "string",
+          "description": "Request URL (supports {{params.x}} templates)"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "body": {
+          "description": "Request body (for POST/PUT/PATCH)"
+        },
+        "response": {
+          "$ref": "#/definitions/responseMapping"
+        }
+      }
+    },
+    "graphqlExecutor": {
+      "type": "object",
+      "description": "GraphQL query/mutation",
+      "required": ["query"],
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "format": "uri",
+          "description": "GraphQL endpoint (overrides api.graphql)"
+        },
+        "query": {
+          "type": "string",
+          "description": "GraphQL query or mutation"
+        },
+        "variables": {
+          "type": "object",
+          "description": "Query variables (supports {{params.x}} templates)"
+        },
+        "response": {
+          "$ref": "#/definitions/responseMapping"
+        }
+      }
+    },
+    "sqlExecutor": {
+      "type": "object",
+      "description": "SQL query",
+      "required": ["query"],
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "SQL query (supports {{params.x}} templates)"
+        },
+        "database": {
+          "type": "string",
+          "description": "Database path (overrides connector-level)"
+        }
+      }
+    },
+    "commandExecutor": {
+      "type": "object",
+      "description": "Shell command",
+      "properties": {
+        "run": {
+          "type": "string",
+          "description": "Command to execute (supports {{params.x}} templates)"
+        },
+        "binary": {
+          "type": "string",
+          "description": "Binary to execute"
+        },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Arguments (supports {{params.x}} templates)"
+        }
+      }
+    },
+    "swiftExecutor": {
+      "type": "object",
+      "description": "Swift script (macOS only)",
+      "required": ["script"],
+      "properties": {
+        "script": {
+          "type": "string",
+          "description": "Swift code to execute"
+        }
+      }
+    },
+    "responseMapping": {
+      "type": "object",
+      "description": "Response transformation",
+      "properties": {
+        "root": {
+          "type": "string",
+          "description": "JSONPath to extract (e.g., 'data.items')"
+        },
+        "mapping": {
+          "type": "object",
+          "description": "Field mappings (target: jmespath or nested object)",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

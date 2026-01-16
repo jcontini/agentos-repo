@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { aos } from '../../../../../tests/utils/fixtures';
+import { aos } from '../../../tests/utils/fixtures';
 
 const app = 'apple-contacts';
 
