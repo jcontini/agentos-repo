@@ -8,9 +8,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { aos, testContent, TEST_PREFIX } from '../../../tests/utils/fixtures';
 
-const app = 'todoist';
+const connector = 'todoist';
 const account = 'Personal';
-const baseParams = { app, account };
+const baseParams = { connector, account };
 
 // Track created items for cleanup
 const createdItems: Array<{ id: string }> = [];
@@ -20,7 +20,7 @@ describe('Todoist Connector', () => {
   afterAll(async () => {
     for (const item of createdItems) {
       try {
-        await aos().call('Apps', {
+        await aos().call('Connect', {
           ...baseParams,
           action: 'delete',
           params: { id: item.id },
@@ -34,7 +34,7 @@ describe('Todoist Connector', () => {
 
   describe('list', () => {
     it('returns an array of tasks', async () => {
-      const tasks = await aos().call('Apps', {
+      const tasks = await aos().call('Connect', {
         ...baseParams,
         action: 'list',
         params: { limit: 5 },
@@ -44,7 +44,7 @@ describe('Todoist Connector', () => {
     });
 
     it('tasks have required fields', async () => {
-      const tasks = await aos().call('Apps', {
+      const tasks = await aos().call('Connect', {
         ...baseParams,
         action: 'list',
         params: { limit: 5 },
@@ -58,7 +58,7 @@ describe('Todoist Connector', () => {
     });
 
     it('respects limit parameter', async () => {
-      const tasks = await aos().call('Apps', {
+      const tasks = await aos().call('Connect', {
         ...baseParams,
         action: 'list',
         params: { limit: 3 },
@@ -74,7 +74,7 @@ describe('Todoist Connector', () => {
     it('can create a task', async () => {
       const title = testContent('task');
       
-      createdTask = await aos().call('Apps', {
+      createdTask = await aos().call('Connect', {
         ...baseParams,
         action: 'create',
         params: {
@@ -96,7 +96,7 @@ describe('Todoist Connector', () => {
         return;
       }
 
-      const task = await aos().call('Apps', {
+      const task = await aos().call('Connect', {
         ...baseParams,
         action: 'get',
         params: { id: createdTask.id },
@@ -115,7 +115,7 @@ describe('Todoist Connector', () => {
 
       const newTitle = testContent('updated task');
       
-      const updated = await aos().call('Apps', {
+      const updated = await aos().call('Connect', {
         ...baseParams,
         action: 'update',
         params: {
@@ -134,7 +134,7 @@ describe('Todoist Connector', () => {
         return;
       }
 
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'complete',
         params: { id: createdTask.id },
@@ -150,7 +150,7 @@ describe('Todoist Connector', () => {
         return;
       }
 
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'delete',
         params: { id: createdTask.id },
@@ -167,7 +167,7 @@ describe('Todoist Connector', () => {
 
   describe('projects', () => {
     it('can list projects', async () => {
-      const projects = await aos().call('Apps', {
+      const projects = await aos().call('Connect', {
         ...baseParams,
         action: 'projects',
       });

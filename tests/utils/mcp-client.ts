@@ -276,27 +276,10 @@ export class AgentOS {
 
   // Convenience methods for common apps
 
-  books = {
-    list: (params?: object) => this.call('Books', { action: 'list', params }),
-    get: (id: string) => this.call('Books', { action: 'get', params: { id } }),
-    create: (params: object) => this.call('Books', { action: 'create', params, execute: true }),
-    update: (id: string, params: object) => this.call('Books', { action: 'update', params: { id, ...params }, execute: true }),
-    delete: (id: string) => this.call('Books', { action: 'delete', params: { id }, execute: true }),
-    import: (connector: string, path: string, dry_run = false) => 
-      this.call('Books', { action: 'import', connector, params: { path, dry_run }, execute: true }),
-  };
-
-  tasks = {
-    list: (params?: object) => this.call('Tasks', { action: 'list', ...params }),
-    create: (params: object) => this.call('Tasks', { action: 'create', params }),
-    complete: (id: string, connector: string) => this.call('Tasks', { action: 'complete', connector, params: { id } }),
-    delete: (id: string, connector: string) => this.call('Tasks', { action: 'delete', connector, params: { id } }),
-  };
-
-  files = {
-    browse: (path: string) => this.call('Files', { action: 'browse', params: { path } }),
-    read: (path: string) => this.call('Files', { action: 'read', params: { path } }),
-  };
+  // Convenience methods - now use Connect tool with connector param
+  connect(connector: string, action: string, params?: object, execute?: boolean) {
+    return this.call('Connect', { connector, action, params, execute });
+  }
 }
 
 // Global instance for tests (set in setup.ts)

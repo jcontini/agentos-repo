@@ -13,7 +13,7 @@ import addFormats from 'ajv-formats';
 import { parse as parseYaml } from 'yaml';
 
 const INTEGRATIONS_ROOT = join(__dirname, '..');
-const APPS_DIR = join(INTEGRATIONS_ROOT, 'apps');
+const APPS_DIR = join(INTEGRATIONS_ROOT, 'connectors');
 const SCHEMA_PATH = join(INTEGRATIONS_ROOT, 'tests', 'connector.schema.json');
 
 // Load and compile schema
@@ -47,7 +47,7 @@ describe('Connector Schema Validation', () => {
     expect(apps.length).toBeGreaterThan(0);
   });
 
-  describe.each(apps)('apps/%s', (app) => {
+  describe.each(apps)('connectors/%s', (app) => {
     const readmePath = join(APPS_DIR, app, 'readme.md');
 
     it('has readme.md', () => {

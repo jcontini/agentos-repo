@@ -40,8 +40,8 @@ if [ -z "$CHANGED_FILES" ]; then
   exit 0
 fi
 
-# Extract unique apps from changed files (apps/{app}/...)
-AFFECTED_APPS=$(echo "$CHANGED_FILES" | grep -oE '^apps/[^/]+' | sort -u | cut -d/ -f2 || true)
+# Extract unique connectors from changed files (connectors/{connector}/...)
+AFFECTED_APPS=$(echo "$CHANGED_FILES" | grep -oE '^connectors/[^/]+' | sort -u | cut -d/ -f2 || true)
 
 if [ -z "$AFFECTED_APPS" ]; then
   echo "✅ No app files changed"
@@ -61,20 +61,20 @@ SKIPPED=0
 
 # Run tests for each affected app that has tests
 for app in $AFFECTED_APPS; do
-  APP_TEST_DIR="apps/$app/tests"
+  APP_TEST_DIR="connectors/$app/tests"
   
   if [ -d "$APP_TEST_DIR" ]; then
     TEST_COUNT=$(find "$APP_TEST_DIR" -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
     if [ "$TEST_COUNT" -gt 0 ]; then
-      echo "🧪 Testing apps/$app..."
+      echo "🧪 Testing connectors/$app..."
       npm test -- "$APP_TEST_DIR" --run || exit 1
       TESTED=$((TESTED + 1))
     else
-      echo "⏭️  apps/$app: no test files"
+      echo "⏭️  connectors/$app: no test files"
       SKIPPED=$((SKIPPED + 1))
     fi
   else
-    echo "⏭️  apps/$app: no tests/ directory"
+    echo "⏭️  connectors/$app: no tests/ directory"
     SKIPPED=$((SKIPPED + 1))
   fi
 done

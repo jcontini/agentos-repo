@@ -7,7 +7,7 @@
  * 3. Cookie auth injection working
  * 4. Real Instagram credentials
  * 
- * Run with: npm test -- apps/messages/connectors/instagram
+ * Run with: npm test -- connectors/instagram
  */
 
 import { describe, it, expect } from 'vitest';
@@ -31,11 +31,11 @@ describe('Instagram Connector', () => {
   });
 
   describe.skip('Read Operations', () => {
-    const app = 'instagram';
+    const connector = 'instagram';
     const baseParams = { app };
 
     it('should list conversations', async () => {
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'list_conversations'
       });
@@ -44,7 +44,7 @@ describe('Instagram Connector', () => {
 
     it('should get conversation by id', async () => {
       // Need a real thread_id
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'get_conversation',
         params: { conversation_id: 'test_thread_id' }
@@ -53,7 +53,7 @@ describe('Instagram Connector', () => {
     });
 
     it('should list messages in conversation', async () => {
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'list',
         params: { conversation_id: 'test_thread_id', limit: 20 }
@@ -62,7 +62,7 @@ describe('Instagram Connector', () => {
     });
 
     it('should search messages', async () => {
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'search',
         params: { query: 'hello' }
@@ -71,7 +71,7 @@ describe('Instagram Connector', () => {
     });
 
     it('should get unread messages', async () => {
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'get_unread'
       });
@@ -80,12 +80,12 @@ describe('Instagram Connector', () => {
   });
 
   describe.skip('Write Operations', () => {
-    const app = 'instagram';
+    const connector = 'instagram';
     const baseParams = { app };
 
     it('should send a message', async () => {
       const content = testContent('test message');
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'send',
         params: { conversation_id: 'test_thread_id', content },
@@ -95,7 +95,7 @@ describe('Instagram Connector', () => {
     });
 
     it('should react to a message', async () => {
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'react',
         params: {
@@ -109,7 +109,7 @@ describe('Instagram Connector', () => {
     });
 
     it('should mark message as read', async () => {
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'mark_read',
         params: {
@@ -124,7 +124,7 @@ describe('Instagram Connector', () => {
     it('should delete a message', async () => {
       // First send a test message
       const content = testContent('to delete');
-      const sendResult = await aos().call('Apps', {
+      const sendResult = await aos().call('Connect', {
         ...baseParams,
         action: 'send',
         params: { conversation_id: 'test_thread_id', content },
@@ -132,7 +132,7 @@ describe('Instagram Connector', () => {
       });
 
       // Then delete it
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'delete',
         params: {
@@ -146,11 +146,11 @@ describe('Instagram Connector', () => {
   });
 
   describe.skip('Presence', () => {
-    const app = 'instagram';
+    const connector = 'instagram';
     const baseParams = { app };
 
     it('should get presence status', async () => {
-      const result = await aos().call('Apps', {
+      const result = await aos().call('Connect', {
         ...baseParams,
         action: 'get_presence',
         params: { user_ids: ['test_user_id'] }

@@ -12,7 +12,6 @@
     "rootDir": ".."
   },
   "include": [
-    "../apps/**/tests/**/*.ts",
     "../connectors/**/tests/**/*.ts",
     "./utils/**/*.ts",
     "./setup.ts"

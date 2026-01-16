@@ -1,11 +1,11 @@
-# Contributing to AgentOS Integrations
+# Contributing to AgentOS
 
 This repo contains **connectors** — YAML configs that connect AgentOS to external services.
 
 ## Quick Start
 
 ```yaml
-# apps/myservice/readme.md
+# connectors/myservice/readme.md
 ---
 id: myservice
 name: My Service
@@ -38,7 +38,7 @@ Human-readable documentation goes here.
 ## Folder Structure
 
 ```
-apps/
+connectors/
   linear/           # Each connector is a folder
     readme.md       # YAML frontmatter + markdown docs
     icon.png        # Square icon (PNG or SVG)
@@ -175,7 +175,7 @@ The pre-commit hook blocks:
 Tests are E2E — they call the real AgentOS binary with real APIs.
 
 ```typescript
-// apps/myservice/tests/myservice.test.ts
+// connectors/myservice/tests/myservice.test.ts
 import { describe, it, expect } from 'vitest';
 import { aos, testContent, TEST_PREFIX } from '../../../tests/utils/fixtures';
 
@@ -195,7 +195,7 @@ describe('My Service', () => {
 
 ```bash
 npm test                    # All tests
-npm test apps/myservice     # Single connector
+npm test connectors/myservice     # Single connector
 ```
 
 ## Git Hooks
@@ -209,11 +209,11 @@ npm test apps/myservice     # Single connector
 
 | Pattern | Example |
 |---------|---------|
-| REST API | `apps/demo/readme.md` |
-| GraphQL API | `apps/linear/readme.md` |
-| Local SQLite | `apps/imessage/readme.md` |
-| macOS Swift | `apps/apple-calendar/readme.md` |
-| Cookie auth | `apps/instagram/readme.md` |
+| REST API | `connectors/demo/readme.md` |
+| GraphQL API | `connectors/linear/readme.md` |
+| Local SQLite | `connectors/imessage/readme.md` |
+| macOS Swift | `connectors/apple-calendar/readme.md` |
+| Cookie auth | `connectors/instagram/readme.md` |
 
 ## Checklist
 

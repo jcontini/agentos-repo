@@ -1,8 +1,8 @@
 {
   "yaml.schemas": {
-    "./tests/connector.schema.json": "apps/*/readme.md"
+    "./tests/connector.schema.json": "connectors/*/readme.md"
   },
   "files.associations": {
-    "apps/*/readme.md": "yaml"
+    "connectors/*/readme.md": "yaml"
   }
 }
