@@ -4,6 +4,7 @@ name: Copilot Money
 description: Manage finances in Copilot Money - transactions, categories, and organization
 icon: icon.png
 color: "#00C853"
+tags: [finance, money, budgeting]
 
 website: https://copilot.money
 privacy_url: https://copilot.money/privacy
