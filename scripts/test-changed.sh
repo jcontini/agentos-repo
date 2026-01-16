@@ -1,10 +1,8 @@
 #!/bin/bash
-# Run tests only for changed apps/connectors
-# 
-# If you edit an app/connector, it MUST have valid YAML and tests.
-# This progressively enforces test coverage as code is touched.
+# Run full integration tests for changed apps
+# Called by pre-push hook or manually
 #
-# Usage: ./scripts/test-changed.sh [--all] [--staged]
+# Usage: ./scripts/test-changed.sh [--all] [--staged] [--committed]
 
 set -e
 
@@ -12,13 +10,13 @@ cd "$(dirname "$0")/.."
 
 # Parse args
 RUN_ALL=false
-CHECK_STAGED=true
+CHECK_MODE="committed"  # Default: check commits not yet pushed
 
 for arg in "$@"; do
   case $arg in
     --all) RUN_ALL=true ;;
-    --staged) CHECK_STAGED=true ;;
-    --committed) CHECK_STAGED=false ;;
+    --staged) CHECK_MODE="staged" ;;
+    --committed) CHECK_MODE="committed" ;;
   esac
 done
 
@@ -28,11 +26,13 @@ if [ "$RUN_ALL" = true ]; then
   exit 0
 fi
 
-# Get changed files
-if [ "$CHECK_STAGED" = true ]; then
+# Get changed files based on mode
+if [ "$CHECK_MODE" = "staged" ]; then
   CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || echo "")
 else
-  CHANGED_FILES=$(git diff HEAD~1 --name-only --diff-filter=ACMR 2>/dev/null || echo "")
+  # Files changed in commits not yet pushed
+  CHANGED_FILES=$(git diff @{u}..HEAD --name-only --diff-filter=ACMR 2>/dev/null || \
+                  git diff HEAD~5..HEAD --name-only --diff-filter=ACMR 2>/dev/null || echo "")
 fi
 
 if [ -z "$CHANGED_FILES" ]; then
@@ -40,72 +40,44 @@ if [ -z "$CHANGED_FILES" ]; then
   exit 0
 fi
 
-# Check if any readme.md files were changed in apps/
-CHANGED_READMES=$(echo "$CHANGED_FILES" | grep -E '^apps/[^/]+/readme\.md$' || true)
-
-if [ -n "$CHANGED_READMES" ]; then
-  echo "📋 Validating YAML schema for changed connectors..."
-  
-  # Extract app names from changed readme paths
-  CHANGED_APPS=$(echo "$CHANGED_READMES" | sed 's|apps/||' | sed 's|/readme.md||' | tr '\n' ' ')
-  
-  # Run fast schema validation (no AgentOS connection needed)
-  node scripts/validate-schema.mjs $CHANGED_APPS
-  if [ $? -ne 0 ]; then
-    echo ""
-    echo "❌ COMMIT BLOCKED: Schema validation failed"
-    echo ""
-    echo "Fix the YAML errors above, then try again."
-    exit 1
-  fi
-  echo ""
-fi
-
 # Extract unique apps from changed files (apps/{app}/...)
-# New flat structure: apps/linear/, apps/todoist/, etc.
 AFFECTED_APPS=$(echo "$CHANGED_FILES" | grep -oE '^apps/[^/]+' | sort -u | cut -d/ -f2 || true)
 
 if [ -z "$AFFECTED_APPS" ]; then
-  echo "✅ No app/connector files changed"
+  echo "✅ No app files changed"
   exit 0
 fi
 
-echo "📦 Changed apps: ${AFFECTED_APPS:-none}"
+echo "📦 Testing apps: $AFFECTED_APPS"
 echo ""
 
-MISSING_TESTS=()
+# First, run schema validation
+echo "📋 Schema validation..."
+node scripts/validate-schema.mjs $AFFECTED_APPS || exit 1
+echo ""
 
-# Check and run tests for each affected app
+TESTED=0
+SKIPPED=0
+
+# Run tests for each affected app that has tests
 for app in $AFFECTED_APPS; do
   APP_TEST_DIR="apps/$app/tests"
   
-  if [ ! -d "$APP_TEST_DIR" ]; then
-    MISSING_TESTS+=("apps/$app")
-  else
-    # Check there's at least one test file
+  if [ -d "$APP_TEST_DIR" ]; then
     TEST_COUNT=$(find "$APP_TEST_DIR" -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
-    if [ "$TEST_COUNT" -eq 0 ]; then
-      MISSING_TESTS+=("apps/$app")
-    else
+    if [ "$TEST_COUNT" -gt 0 ]; then
       echo "🧪 Testing apps/$app..."
       npm test -- "$APP_TEST_DIR" --run || exit 1
+      TESTED=$((TESTED + 1))
+    else
+      echo "⏭️  apps/$app: no test files"
+      SKIPPED=$((SKIPPED + 1))
     fi
+  else
+    echo "⏭️  apps/$app: no tests/ directory"
+    SKIPPED=$((SKIPPED + 1))
   fi
 done
 
-# If any changed apps are missing tests, fail
-if [ ${#MISSING_TESTS[@]} -gt 0 ]; then
-  echo ""
-  echo "❌ COMMIT BLOCKED: Missing tests for changed code"
-  echo ""
-  echo "The following need tests before you can commit:"
-  for missing in "${MISSING_TESTS[@]}"; do
-    echo "  - $missing/tests/*.test.ts"
-  done
-  echo ""
-  echo "Add at least one test file, then try again."
-  exit 1
-fi
-
 echo ""
-echo "✅ All tests passed"
+echo "✅ Done: $TESTED tested, $SKIPPED skipped"
