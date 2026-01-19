@@ -4,7 +4,17 @@
 id: settings
 name: Settings
 icon: icon.svg
-description: Configure AgentOS preferences, themes, and more
+description: Configure AgentOS preferences, plugins, and credentials
+
+# Entity types this app displays
+entities:
+  - settings
+
+# What this app manages (shown in MCP tool description)
+manages:
+  - all plugins
+  - all credentials
+  - system settings
 
 # Menu bar configuration
 menus:
@@ -13,9 +23,225 @@ menus:
       - label: About Settings
         action: open_view
         view: about
+  - name: File
+    items:
+      - label: Export Settings...
+        action: export_settings
+      - label: Import Settings...
+        action: import_settings
+  - name: Plugins
+    items:
+      - label: Reload All
+        action: reload_plugins
+      - separator: true
+      - label: View Sources
+        action: open_view
+        view: sources
 
 views:
-  # About view - shows AgentOS info
+  # Main tabbed settings panel
+  main:
+    title: Settings
+    entity: settings
+    layout:
+      - component: tabs
+        props:
+          tabs:
+            - id: general
+              label: General
+            - id: plugins
+              label: Plugins
+            - id: privacy
+              label: Privacy
+            - id: accounts
+              label: Accounts
+            - id: about
+              label: About
+          default: general
+          activeTab: "{{params.tab}}"
+        slots:
+          general:
+            component: layout/scroll-area
+            children:
+              - component: layout/stack
+                props:
+                  gap: 16
+                  padding: 16
+                children:
+                  - component: text
+                    props:
+                      content: Features
+                      variant: title
+                  - component: layout/stack
+                    props:
+                      gap: 8
+                    children:
+                      - component: toggle
+                        props:
+                          label: Enable activity logging
+                          checked: "{{activity.response.settings.logging_enabled}}"
+                        on_change:
+                          tool: Settings
+                          action: set
+                          params:
+                            key: logging_enabled
+                      - component: toggle
+                        props:
+                          label: Allow terminal access
+                          checked: "{{activity.response.settings.terminal_enabled}}"
+                        on_change:
+                          tool: Settings
+                          action: set
+                          params:
+                            key: terminal_enabled
+                      - component: toggle
+                        props:
+                          label: Show window when agent connects
+                          checked: "{{activity.response.settings.show_app_when_server_starts}}"
+                        on_change:
+                          tool: Settings
+                          action: set
+                          params:
+                            key: show_app_when_server_starts
+                  - component: text
+                    props:
+                      content: Downloads
+                      variant: title
+                  - component: text
+                    props:
+                      content: "Location: ~/Downloads"
+                      variant: body
+
+          plugins:
+            component: layout/scroll-area
+            children:
+              - component: layout/stack
+                props:
+                  gap: 16
+                  padding: 16
+                children:
+                  - component: text
+                    props:
+                      content: Installed Plugins
+                      variant: title
+                  - component: text
+                    props:
+                      content: "Plugin list will appear here. Use the Plugins menu to reload or manage sources."
+                      variant: body
+
+          privacy:
+            component: layout/scroll-area
+            children:
+              - component: layout/stack
+                props:
+                  gap: 16
+                  padding: 16
+                children:
+                  - component: text
+                    props:
+                      content: Share with Agents
+                      variant: title
+                  - component: layout/stack
+                    props:
+                      gap: 8
+                    children:
+                      - component: toggle
+                        props:
+                          label: User profile
+                          checked: "{{activity.response.settings.share_profile_with_agents}}"
+                        on_change:
+                          tool: Settings
+                          action: set
+                          params:
+                            key: share_profile_with_agents
+                      - component: toggle
+                        props:
+                          label: Operating system
+                          checked: "{{activity.response.settings.share_system_os}}"
+                        on_change:
+                          tool: Settings
+                          action: set
+                          params:
+                            key: share_system_os
+                      - component: toggle
+                        props:
+                          label: Home directory path
+                          checked: "{{activity.response.settings.share_system_home}}"
+                        on_change:
+                          tool: Settings
+                          action: set
+                          params:
+                            key: share_system_home
+                      - component: toggle
+                        props:
+                          label: Timezone
+                          checked: "{{activity.response.settings.share_system_timezone}}"
+                        on_change:
+                          tool: Settings
+                          action: set
+                          params:
+                            key: share_system_timezone
+                      - component: toggle
+                        props:
+                          label: Current date
+                          checked: "{{activity.response.settings.share_system_date}}"
+                        on_change:
+                          tool: Settings
+                          action: set
+                          params:
+                            key: share_system_date
+
+          accounts:
+            component: layout/scroll-area
+            children:
+              - component: layout/stack
+                props:
+                  gap: 16
+                  padding: 16
+                children:
+                  - component: text
+                    props:
+                      content: Configured Accounts
+                      variant: title
+                  - component: text
+                    props:
+                      content: "Credential accounts by plugin will appear here."
+                      variant: body
+
+          about:
+            component: layout/stack
+            props:
+              gap: 20
+              align: center
+              padding: 32
+            children:
+              - component: text
+                props:
+                  content: "⚙️"
+                  variant: title
+                  align: center
+              - component: text
+                props:
+                  content: AgentOS
+                  variant: title
+                  align: center
+              - component: layout/stack
+                props:
+                  gap: 8
+                  align: center
+                children:
+                  - component: text
+                    props:
+                      content: "The semantic layer between AI assistants and your digital life"
+                      variant: body
+                      align: center
+                  - component: text
+                    props:
+                      content: "Version 0.1.0"
+                      variant: caption
+                      align: center
+
+  # Standalone about view (accessible from menu)
   about:
     title: About AgentOS
     layout:
@@ -50,30 +276,33 @@ views:
                   content: "Version 0.1.0"
                   variant: caption
                   align: center
-              - component: text
-                props:
-                  content: "Source: apps/settings/app.yaml"
-                  variant: caption
-                  align: center
 
-  # Themes view - list available themes
-  themes:
-    title: Themes
+  # Plugin sources view
+  sources:
+    title: Plugin Sources
     layout:
       - component: layout/scroll-area
         children:
           - component: layout/stack
             props:
-              gap: 12
+              gap: 16
               padding: 16
             children:
               - component: text
                 props:
-                  content: "Available Themes"
+                  content: Plugin Sources
                   variant: title
               - component: text
                 props:
-                  content: "Themes control the look and feel of your desktop. More themes coming soon."
+                  content: "Directories scanned for plugins:"
+                  variant: body
+              - component: text
+                props:
+                  content: "• ~/.agentos/plugins"
+                  variant: body
+              - component: text
+                props:
+                  content: "• ~/.agentos/integrations/plugins"
                   variant: body
 
-default_view: about
+default_view: main
