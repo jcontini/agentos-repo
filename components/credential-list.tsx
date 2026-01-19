@@ -1,8 +1,8 @@
 /**
  * Credential List Component
  * 
- * Displays configured credential accounts grouped by plugin.
- * Only shows account names, never actual secrets.
+ * Displays configured credential accounts in a compact table.
+ * Shows plugin name, account name, and masked key preview.
  * 
  * @example
  * ```yaml
@@ -10,7 +10,7 @@
  * ```
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // =============================================================================
 // Types
@@ -19,11 +19,7 @@ import React, { useState, useEffect } from 'react';
 interface Credential {
   account: string;
   plugin: string;
-}
-
-interface PluginGroup {
-  plugin: string;
-  accounts: string[];
+  key_preview?: string; // e.g., "sk-ab••••xyz9"
 }
 
 interface CredentialListProps {
@@ -53,37 +49,29 @@ async function fetchCredentials(): Promise<Credential[]> {
   return data.result?.credentials || [];
 }
 
-function groupByPlugin(credentials: Credential[]): PluginGroup[] {
-  const groups = new Map<string, string[]>();
-  
-  for (const cred of credentials) {
-    const accounts = groups.get(cred.plugin) || [];
-    accounts.push(cred.account);
-    groups.set(cred.plugin, accounts);
-  }
-  
-  // Sort plugins alphabetically
-  return Array.from(groups.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([plugin, accounts]) => ({ plugin, accounts }));
-}
-
 // =============================================================================
 // Component
 // =============================================================================
 
 export function CredentialList({ className = '' }: CredentialListProps) {
-  const [groups, setGroups] = useState<PluginGroup[]>([]);
+  const [credentials, setCredentials] = useState<Credential[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   useEffect(() => {
     let cancelled = false;
     
     fetchCredentials()
-      .then(credentials => {
+      .then(creds => {
         if (!cancelled) {
-          setGroups(groupByPlugin(credentials));
+          // Sort by plugin name, then account name
+          creds.sort((a, b) => {
+            const pluginCmp = a.plugin.localeCompare(b.plugin);
+            return pluginCmp !== 0 ? pluginCmp : a.account.localeCompare(b.account);
+          });
+          setCredentials(creds);
           setLoading(false);
         }
       })
@@ -96,6 +84,30 @@ export function CredentialList({ className = '' }: CredentialListProps) {
     
     return () => { cancelled = true; };
   }, []);
+
+  // Keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (credentials.length === 0) return;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(i => Math.min(i + 1, credentials.length - 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(i => Math.max(i - 1, 0));
+        break;
+      case 'Home':
+        e.preventDefault();
+        setSelectedIndex(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        setSelectedIndex(credentials.length - 1);
+        break;
+    }
+  };
 
   // Loading state
   if (loading) {
@@ -122,7 +134,7 @@ export function CredentialList({ className = '' }: CredentialListProps) {
   }
 
   // Empty state
-  if (groups.length === 0) {
+  if (credentials.length === 0) {
     return (
       <div className={`credential-list credential-list--empty ${className}`}>
         <div className="credential-list-empty">
@@ -136,22 +148,41 @@ export function CredentialList({ className = '' }: CredentialListProps) {
     );
   }
 
-  // Credential groups
+  // Compact table view
   return (
     <div className={`credential-list ${className}`}>
-      {groups.map(group => (
-        <fieldset key={group.plugin} className="credential-group">
-          <legend className="credential-group-name">{group.plugin}</legend>
-          <ul className="credential-accounts">
-            {group.accounts.map(account => (
-              <li key={account} className="credential-account">
-                <span className="credential-account-icon">●</span>
-                <span className="credential-account-name">{account}</span>
-              </li>
-            ))}
-          </ul>
-        </fieldset>
-      ))}
+      <table
+        ref={tableRef}
+        className="detailed"
+        role="grid"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        aria-label="Configured accounts"
+      >
+        <thead>
+          <tr>
+            <th>Plugin</th>
+            <th>Account</th>
+            <th>Key</th>
+          </tr>
+        </thead>
+        <tbody>
+          {credentials.map((cred, index) => (
+            <tr
+              key={`${cred.plugin}-${cred.account}`}
+              className={index === selectedIndex ? 'selected' : ''}
+              onClick={() => setSelectedIndex(index)}
+              aria-selected={index === selectedIndex}
+            >
+              <td className="credential-plugin">{cred.plugin}</td>
+              <td className="credential-account">{cred.account}</td>
+              <td className="credential-key-preview">
+                {cred.key_preview || '••••••••'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

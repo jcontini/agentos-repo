@@ -2765,41 +2765,21 @@ progress:not([value])::-webkit-progress-value {
   color: #c00;
 }
 
-/* Credential group (fieldset per plugin) */
-.credential-group {
-  margin: 0;
-  padding: 8px 12px;
-}
-
-.credential-group-name {
-  font-weight: bold;
+/* Credential table columns */
+.credential-plugin {
+  font-weight: 500;
   text-transform: capitalize;
 }
 
-.credential-accounts {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .credential-account {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 0;
-  font-size: 12px;
-}
-
-.credential-account-icon {
-  color: #4a4;
-  font-size: 8px;
-}
-
-.credential-account-name {
   color: #333;
+}
+
+.credential-key-preview {
+  font-family: "Monaco", "Menlo", monospace;
+  font-size: 10px;
+  color: #666;
+  letter-spacing: 0.5px;
 }
 
 /* =============================================================================
