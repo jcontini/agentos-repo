@@ -1,0 +1,27 @@
+id: macos9
+name: Mac OS 9
+type: os
+description: Classic Mac OS 9 appearance with platinum styling
+family: macos
+
+# Credits - this theme is ported from classic-stylesheets
+credits:
+  source: classic-stylesheets
+  source_url: https://github.com/nielssp/classic-stylesheets
+  author: Niels Sonnich Poulsen
+  license: MIT
+
+# Chrome configuration
+chrome:
+  titlebar_buttons: left
+  titlebar_height: 18
+  window_border: 4
+  corner_radius: 0
+  has_menubar: true
+  has_taskbar: false
+
+# Available skins (color variations)
+skins:
+  - id: default
+    name: Default
+    description: Classic purple platinum appearance
