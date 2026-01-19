@@ -1,59 +1,61 @@
 # Browser App
-# Web search and page reading
+# Displays web search and reading activity from AI agents
 
 id: browser
 name: Browser
 icon: globe
-description: Search the web and read pages
+description: Watch AI search the web and read pages
 
-capabilities:
+# What activities this app displays
+displays:
   - web_search
   - web_read
 
 views:
+  # Search results view - shows web_search activity
   search:
     title: Browser
-    layout:
-      - component: text-input
+    toolbar:
+      - component: url-bar
         props:
-          value: "{{query}}"
-          placeholder: "Search or enter URL"
-          aria-label: "Search query"
-        on_submit:
-          action: search
-          params:
-            query: "{{value}}"
-      
+          mode: search
+          query: "{{activity.request.query}}"
+          loading: "{{activity.pending}}"
+          source: "{{activity.connector}}"
+    
+    layout:
       - component: list
         data:
-          capability: web_search
-          params:
-            query: "{{query}}"
-        item_component: search-result
+          source: activity
+          filter: web_search
+        item_component: items/search-result
         item_props:
           title: "{{title}}"
           url: "{{url}}"
           snippet: "{{snippet}}"
-        on_select:
-          view: read
-          params:
-            url: "{{item.url}}"
-            title: "{{item.title}}"
+        footer:
+          count: "{{activity.response.length}}"
+          source: "{{activity.connector}}"
+          duration: "{{activity.duration_ms}}"
 
+  # Read view - shows web_read activity
   read:
-    title: "{{params.title}}"
-    layout:
-      - component: text-input
+    title: "{{activity.response.title}}"
+    toolbar:
+      - component: url-bar
         props:
-          value: "{{params.url}}"
-          disabled: true
-          aria-label: "Page URL"
-      
-      - component: markdown
-        data:
-          capability: web_read
-          params:
-            url: "{{params.url}}"
-        content: "{{content}}"
+          mode: url
+          url: "{{activity.request.url}}"
+          loading: "{{activity.pending}}"
+          source: "{{activity.connector}}"
+    
+    layout:
+      - component: scroll-area
+        children:
+          - component: markdown
+            content: "{{activity.response.content}}"
+        footer:
+          source: "{{activity.connector}}"
+          duration: "{{activity.duration_ms}}"
 
 default_view: search
