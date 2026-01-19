@@ -122,13 +122,80 @@ function BoolControl({ setting, onUpdate, updating }: SettingControlProps) {
 
 function StringControl({ setting, onUpdate, updating }: SettingControlProps) {
   const [localValue, setLocalValue] = useState(setting.value as string || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const isPathSetting = setting.preview && (
+    setting.key.includes('location') || 
+    setting.key.includes('path') || 
+    setting.key.includes('directory')
+  );
   
-  const handleBlur = () => {
+  const handleSave = () => {
     if (localValue !== setting.value) {
       onUpdate(setting.key, localValue || null);
     }
+    setIsEditing(false);
   };
   
+  const handleReset = () => {
+    setLocalValue('');
+    onUpdate(setting.key, null);
+    setIsEditing(false);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setLocalValue(setting.value as string || '');
+      setIsEditing(false);
+    }
+  };
+  
+  // Path settings with preview get special treatment
+  if (isPathSetting) {
+    return (
+      <div className="setting-item setting-path">
+        <span className="setting-label">{setting.label}</span>
+        {setting.description && (
+          <div className="setting-description">{setting.description}</div>
+        )}
+        <div className="setting-path-display">
+          <span className="setting-path-value">{setting.preview}</span>
+          {setting.value && (
+            <span className="setting-path-custom">(custom)</span>
+          )}
+        </div>
+        {isEditing ? (
+          <div className="setting-path-edit">
+            <input
+              type="text"
+              value={localValue}
+              disabled={updating}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter path..."
+              autoFocus
+            />
+            <button onClick={handleSave} disabled={updating}>Save</button>
+            <button onClick={() => { setLocalValue(setting.value as string || ''); setIsEditing(false); }}>Cancel</button>
+          </div>
+        ) : (
+          <div className="setting-path-actions">
+            <button onClick={() => setIsEditing(true)} disabled={updating}>
+              Browse...
+            </button>
+            {setting.value && (
+              <button onClick={handleReset} disabled={updating}>
+                Reset to Default
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // Standard string input
   return (
     <div className="setting-item">
       <label className="setting-field">
@@ -138,7 +205,7 @@ function StringControl({ setting, onUpdate, updating }: SettingControlProps) {
           value={localValue}
           disabled={updating}
           onChange={(e) => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
+          onBlur={handleSave}
           placeholder="Not set"
         />
       </label>
@@ -183,6 +250,30 @@ function NumberControl({ setting, onUpdate, updating }: SettingControlProps) {
 
 function StringListControl({ setting, onUpdate, updating }: SettingControlProps) {
   const items = (setting.value as string[]) || [];
+  const [isAdding, setIsAdding] = useState(false);
+  const [newValue, setNewValue] = useState('');
+  
+  const handleAdd = () => {
+    if (newValue.trim()) {
+      onUpdate(setting.key, [...items, newValue.trim()]);
+      setNewValue('');
+      setIsAdding(false);
+    }
+  };
+  
+  const handleRemove = (index: number) => {
+    const newItems = items.filter((_, i) => i !== index);
+    onUpdate(setting.key, newItems);
+  };
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAdd();
+    } else if (e.key === 'Escape') {
+      setIsAdding(false);
+      setNewValue('');
+    }
+  };
   
   return (
     <div className="setting-item">
@@ -191,14 +282,45 @@ function StringListControl({ setting, onUpdate, updating }: SettingControlProps)
         <div className="setting-description">{setting.description}</div>
       )}
       <div className="setting-list">
-        {items.length === 0 ? (
+        {items.length === 0 && !isAdding ? (
           <div className="setting-list-empty">No items</div>
         ) : (
           items.map((item, i) => (
             <div key={i} className="setting-list-item">
-              <span>{item}</span>
+              <span className="setting-list-item-text">{item}</span>
+              <button
+                className="setting-list-remove"
+                onClick={() => handleRemove(i)}
+                disabled={updating}
+                title="Remove"
+              >
+                ×
+              </button>
             </div>
           ))
+        )}
+        {isAdding ? (
+          <div className="setting-list-add-form">
+            <input
+              type="text"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter file path..."
+              autoFocus
+              disabled={updating}
+            />
+            <button onClick={handleAdd} disabled={updating || !newValue.trim()}>Add</button>
+            <button onClick={() => { setIsAdding(false); setNewValue(''); }}>Cancel</button>
+          </div>
+        ) : (
+          <button 
+            className="setting-list-add-btn"
+            onClick={() => setIsAdding(true)}
+            disabled={updating}
+          >
+            + Add
+          </button>
         )}
       </div>
     </div>

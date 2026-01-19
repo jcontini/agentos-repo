@@ -3181,3 +3181,153 @@ progress:not([value])::-webkit-progress-value {
 .setting-handler-pattern.drag-over {
   box-shadow: -2px 0 0 var(--primary-3);
 }
+
+/* String list display (file paths, etc.) */
+.setting-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.setting-list-empty {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.setting-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.setting-list-item-text {
+  font-family: "Monaco", "Menlo", monospace;
+  font-size: 11px;
+  color: #333;
+  word-break: break-all;
+  flex: 1;
+}
+
+.setting-list-remove {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid #888;
+  border-radius: 2px;
+  background: #ddd;
+  color: #666;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setting-list-remove:hover {
+  background: #c00;
+  border-color: #900;
+  color: #fff;
+}
+
+.setting-list-add-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.setting-list-add-form input {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-family: "Monaco", "Menlo", monospace;
+}
+
+.setting-list-add-form button {
+  padding: 2px 8px;
+  font-size: 11px;
+  min-width: 50px;
+}
+
+.setting-list-add-btn {
+  align-self: flex-start;
+  padding: 2px 10px;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* Path setting display (download location, etc.) */
+.setting-path {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setting-path-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #000;
+  box-shadow: -1px -1px #888;
+  border-radius: 2px;
+}
+
+.setting-path-value {
+  font-family: "Monaco", "Menlo", monospace;
+  font-size: 12px;
+  color: #000;
+  flex: 1;
+  word-break: break-all;
+}
+
+.setting-path-custom {
+  font-size: 10px;
+  color: #666;
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.setting-path-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.setting-path-actions button {
+  font-size: 11px;
+  padding: 3px 12px;
+}
+
+.setting-path-edit {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.setting-path-edit input {
+  flex: 1;
+  padding: 4px 8px;
+  font-family: "Monaco", "Menlo", monospace;
+  font-size: 11px;
+}
+
+.setting-path-edit button {
+  font-size: 11px;
+  padding: 3px 10px;
+  min-width: 60px;
+}

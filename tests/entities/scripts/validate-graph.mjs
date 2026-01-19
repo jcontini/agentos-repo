@@ -14,7 +14,7 @@
  * Exit codes: 0 = valid, 1 = errors found
  */
 
-import { readFileSync, readdirSync, existsSync } from 'fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { parse as parseYaml } from 'yaml';
@@ -23,6 +23,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const INTEGRATIONS_ROOT = join(__dirname, '../../..');
 const ENTITIES_DIR = join(INTEGRATIONS_ROOT, 'entities');
 const GRAPH_PATH = join(ENTITIES_DIR, 'graph.yaml');
+
+// Files to skip when scanning for entities
+const SKIP_FILES = new Set(['graph.yaml', 'operations.yaml']);
 
 // Collect all errors and warnings
 const errors = [];
@@ -36,6 +39,31 @@ function warn(msg) {
   warnings.push(`⚠️  ${msg}`);
 }
 
+// Recursively find all .yaml files in a directory
+function findYamlFiles(dir, relativePath = '') {
+  const results = [];
+  
+  if (!existsSync(dir)) {
+    return results;
+  }
+  
+  const entries = readdirSync(dir);
+  
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    const relPath = relativePath ? `${relativePath}/${entry}` : entry;
+    
+    if (statSync(fullPath).isDirectory()) {
+      // Recurse into subdirectories
+      results.push(...findYamlFiles(fullPath, relPath));
+    } else if (entry.endsWith('.yaml') && !SKIP_FILES.has(entry)) {
+      results.push({ fullPath, relativePath: relPath, filename: entry });
+    }
+  }
+  
+  return results;
+}
+
 // Load all entity IDs from entity files
 function getValidEntityIds() {
   const entityIds = new Set();
@@ -45,23 +73,21 @@ function getValidEntityIds() {
     return entityIds;
   }
   
-  const files = readdirSync(ENTITIES_DIR).filter(f => 
-    f.endsWith('.yaml') && f !== 'graph.yaml'
-  );
+  const files = findYamlFiles(ENTITIES_DIR);
   
-  for (const file of files) {
-    const content = readFileSync(join(ENTITIES_DIR, file), 'utf-8');
+  for (const { fullPath, relativePath, filename } of files) {
+    const content = readFileSync(fullPath, 'utf-8');
     try {
       const entity = parseYaml(content);
       if (entity.id) {
         entityIds.add(entity.id);
       } else {
-        warn(`Entity file ${file} has no 'id' field`);
+        warn(`Entity file ${relativePath} has no 'id' field`);
         // Fall back to filename without extension
-        entityIds.add(file.replace('.yaml', ''));
+        entityIds.add(filename.replace('.yaml', ''));
       }
     } catch (e) {
-      error(`Failed to parse ${file}: ${e.message}`);
+      error(`Failed to parse ${relativePath}: ${e.message}`);
     }
   }
   

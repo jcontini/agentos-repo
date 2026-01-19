@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, relative } from 'path';
 import { parse as parseYaml } from 'yaml';
 
 const INTEGRATIONS_ROOT = join(__dirname, '../..');
@@ -17,10 +17,28 @@ const ENTITIES_DIR = join(INTEGRATIONS_ROOT, 'entities');
 const GRAPH_PATH = join(ENTITIES_DIR, 'graph.yaml');
 const PLUGINS_DIR = join(INTEGRATIONS_ROOT, 'plugins');
 
-// Get all entity files (excluding graph.yaml)
-const getEntityFiles = () => existsSync(ENTITIES_DIR)
-  ? readdirSync(ENTITIES_DIR).filter(f => f.endsWith('.yaml') && f !== 'graph.yaml')
-  : [];
+// Files to exclude from entity validation (not entity definitions)
+const EXCLUDE_FILES = ['graph.yaml', 'operations.yaml'];
+
+// Recursively get all entity YAML files
+const getEntityFiles = (dir: string = ENTITIES_DIR): string[] => {
+  if (!existsSync(dir)) return [];
+  
+  const entries = readdirSync(dir, { withFileTypes: true });
+  const files: string[] = [];
+  
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...getEntityFiles(fullPath));
+    } else if (entry.name.endsWith('.yaml') && !EXCLUDE_FILES.includes(entry.name)) {
+      // Return relative path from ENTITIES_DIR
+      files.push(relative(ENTITIES_DIR, fullPath));
+    }
+  }
+  
+  return files;
+};
 
 // Recursively find all plugin directories (those with readme.md)
 const getPlugins = (): string[] => {
