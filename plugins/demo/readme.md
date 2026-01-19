@@ -5,7 +5,88 @@ description: Fun demos using free public APIs - no API keys needed!
 icon: icon.svg
 tags: [demo, fun, examples]
 
+# Mock entity implementations for testing
+# Uses httpbin.org (reliable) to test entity-based architecture
 entities:
+  # Webpage entity mocks (for Browser app testing)
+  webpage:
+    search:
+      description: Mock web search (returns sample results)
+      params:
+        query: { type: string, description: "Search query" }
+      rest:
+        method: GET
+        url: "https://httpbin.org/anything?query={{params.query}}"
+        response:
+          mapping:
+            results: "[{\"url\": \"https://example.com/1\", \"title\": \"Result for {{params.query}}\", \"snippet\": \"This is a mock search result for testing.\"}]"
+
+    read:
+      description: Mock webpage read (returns sample content)
+      params:
+        url: { type: string, description: "URL to read" }
+      rest:
+        method: GET
+        url: "https://httpbin.org/anything?url={{params.url}}"
+        response:
+          mapping:
+            url: ".args.url"
+            title: "'Mock Page Title'"
+            content: "'# Mock Content\\n\\nThis is mock webpage content for testing the entity-based architecture.'"
+
+  # Task entity mocks (for Tasks app testing)
+  task:
+    list:
+      description: Mock task list
+      rest:
+        method: GET
+        url: "https://httpbin.org/anything?action=task.list"
+        response:
+          mapping:
+            tasks: "[{\"id\": \"1\", \"title\": \"Mock task 1\", \"completed\": false}, {\"id\": \"2\", \"title\": \"Mock task 2\", \"completed\": true}]"
+
+    create:
+      description: Mock task creation
+      params:
+        title: { type: string, description: "Task title" }
+      rest:
+        method: POST
+        url: "https://httpbin.org/anything"
+        body:
+          action: task.create
+          title: "{{params.title}}"
+        response:
+          mapping:
+            id: "'new-task-id'"
+            title: ".json.title"
+            completed: "false"
+
+  # Contact entity mocks (for Contacts app testing)
+  contact:
+    list:
+      description: Mock contact list
+      rest:
+        method: GET
+        url: "https://httpbin.org/anything?action=contact.list"
+        response:
+          mapping:
+            contacts: "[{\"id\": \"1\", \"name\": \"Alice Smith\", \"email\": \"alice@example.com\"}, {\"id\": \"2\", \"name\": \"Bob Jones\", \"email\": \"bob@example.com\"}]"
+
+    get:
+      description: Mock get contact by ID
+      params:
+        id: { type: string, description: "Contact ID" }
+      rest:
+        method: GET
+        url: "https://httpbin.org/anything?action=contact.get&id={{params.id}}"
+        response:
+          mapping:
+            id: ".args.id"
+            name: "'Mock Contact'"
+            email: "'mock@example.com'"
+            phone: "'+1-555-0123'"
+
+  # Demo-specific tools (fun/testing)
   demo:
     weather:
       description: Get current weather for a city
@@ -99,23 +180,35 @@ entities:
         url: "https://httpbin.org/get"
 
 instructions: |
-  Demo plugin for testing AgentOS and showcasing what's possible.
-  All actions use free public APIs - no API keys needed!
+  Demo plugin for testing AgentOS. All actions use free APIs - no keys needed!
   
-  Try these:
+  Mock entity implementations (for testing apps):
+  - webpage.search/read: Mock web search and page content
+  - task.list/create: Mock task management
+  - contact.list/get: Mock contact lookups
+  
+  Fun demos:
   - demo.weather: Get weather for any city
   - demo.ip: See your public IP and location
   - demo.iss: Track the International Space Station
-  - demo.space: See the next SpaceX launch
   - demo.joke: Get a programming joke
-  - demo.fact: Learn a useless fact
 ---
 
 # Demo
 
-A fun showcase plugin using free public APIs. No API keys required!
+Test harness and showcase plugin. Uses free public APIs - no keys required!
 
-## Tools
+## Mock Entity Implementations
+
+For testing the entity-based architecture without real credentials:
+
+| Entity | Operations | What it does |
+|--------|------------|--------------|
+| `webpage` | `search`, `read` | Mock web search results and page content |
+| `task` | `list`, `create` | Mock task management |
+| `contact` | `list`, `get` | Mock contact directory |
+
+## Fun Demo Tools
 
 | Tool | What it does |
 |------|--------------|
@@ -131,15 +224,19 @@ A fun showcase plugin using free public APIs. No API keys required!
 ## Examples
 
 ```
+# Mock entity tests
+UsePlugin(plugin: "demo", tool: "webpage.search", params: {query: "test"})
+UsePlugin(plugin: "demo", tool: "task.list", params: {limit: 5})
+UsePlugin(plugin: "demo", tool: "contact.get", params: {id: "1"})
+
+# Fun demos
 UsePlugin(plugin: "demo", tool: "demo.weather", params: {city: "Austin"})
-UsePlugin(plugin: "demo", tool: "demo.iss")
 UsePlugin(plugin: "demo", tool: "demo.joke")
 ```
 
 ## For Contributors
 
-This plugin demonstrates how to build plugins using different executors:
-- `rest:` - REST API calls with response mapping
-- `command:` - Shell commands
-
-Use this as a template for building your own plugins!
+This plugin demonstrates:
+- Entity-based plugin structure (`entities.webpage.search`)
+- REST API calls with response mapping
+- Shell commands (`demo.echo`)
