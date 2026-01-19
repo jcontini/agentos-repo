@@ -17,52 +17,61 @@ auth:
   label: API Key
   help_url: https://dashboard.exa.ai/api-keys
 
-# Terminology: how this service names entities
-terminology:
-  webpage: Result
-
 instructions: |
   Exa-specific notes:
   - Neural search finds content by meaning, not just keywords
   - Fast: typically under 1 second per request
   - Use for research, concepts, "how to" queries
 
-# Entity implementations
-# Structure: entities.{entity}.{operation} = executor
-entities:
-  webpage:
-    search:
-      label: "Search web"
-      rest:
-        method: POST
-        url: https://api.exa.ai/search
-        body:
-          query: "{{params.query}}"
-          numResults: "{{params.limit | default:5}}"
-          type: "auto"
-        response:
-          root: "results"
-          mapping:
-            url: ".url"
-            title: ".title"
-            snippet: ".text"
-            published_at: ".publishedDate"
+# ═══════════════════════════════════════════════════════════════════════════════
+# ADAPTERS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    read:
-      label: "Read URL"
-      rest:
-        method: POST
-        url: https://api.exa.ai/contents
-        body:
-          urls:
-            - "{{params.url}}"
-          text: true
-        response:
-          root: "results[0]"
-          mapping:
-            url: ".url"
-            title: ".title"
-            content: ".text"
+adapters:
+  webpage:
+    terminology: Result
+    mapping:
+      url: .url
+      title: .title
+      snippet: .text
+      content: .text
+      published_at: .publishedDate
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPERATIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+operations:
+  webpage.search:
+    description: Search the web using neural/semantic search
+    returns: webpage[]
+    params:
+      query: { type: string, required: true, description: "Search query" }
+      limit: { type: integer, default: 5, description: "Number of results" }
+    rest:
+      method: POST
+      url: https://api.exa.ai/search
+      body:
+        query: "{{params.query}}"
+        numResults: "{{params.limit | default:5}}"
+        type: "auto"
+      response:
+        root: "results"
+
+  webpage.read:
+    description: Extract content from a URL
+    returns: webpage
+    params:
+      url: { type: string, required: true, description: "URL to read" }
+    rest:
+      method: POST
+      url: https://api.exa.ai/contents
+      body:
+        urls:
+          - "{{params.url}}"
+        text: true
+      response:
+        root: "results[0]"
 ---
 
 # Exa

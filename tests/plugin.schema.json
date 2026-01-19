@@ -135,7 +135,7 @@
         "returns": {
           "type": "string",
           "description": "Return type: entity name, entity[], or void",
-          "pattern": "^([a-z_]+\\[\\]?|void)$"
+          "pattern": "^([a-z_]+(\\[\\])?|void)$"
         },
         "params": {
           "type": "object",

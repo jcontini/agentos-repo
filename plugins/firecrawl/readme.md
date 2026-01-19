@@ -18,10 +18,6 @@ auth:
   label: API Key
   help_url: https://www.firecrawl.dev/app/api-keys
 
-# Terminology: how this service names entities
-terminology:
-  webpage: Page
-
 instructions: |
   Firecrawl-specific notes:
   - Renders JavaScript - use for React, Vue, Angular, SPAs
@@ -29,41 +25,62 @@ instructions: |
   - Slower than Exa but handles modern web apps
   - Cost: ~$0.009/page for scrape, ~$0.01/search
 
-# Entity implementations
-# Structure: entities.{entity}.{operation} = executor
-entities:
-  webpage:
-    search:
-      label: "Search web"
-      rest:
-        method: POST
-        url: https://api.firecrawl.dev/v1/search
-        body:
-          query: "{{params.query}}"
-          limit: "{{params.limit | default:5}}"
-        response:
-          root: "data"
-          mapping:
-            url: ".url"
-            title: ".title"
-            snippet: ".description"
+# ═══════════════════════════════════════════════════════════════════════════════
+# ADAPTERS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    read:
-      label: "Read URL"
-      rest:
-        method: POST
-        url: https://api.firecrawl.dev/v1/scrape
-        body:
-          url: "{{params.url}}"
-          formats:
-            - markdown
-          onlyMainContent: true
-        response:
-          root: "data"
-          mapping:
-            url: ".metadata.sourceURL"
-            title: ".metadata.title"
-            content: ".markdown"
+adapters:
+  webpage:
+    terminology: Page
+    # Note: Firecrawl uses different field names for search vs read
+    # Search: .url, .title, .description
+    # Read: .metadata.sourceURL, .metadata.title, .markdown
+    # So we use inline mappings in operations and leave adapter mapping empty
+    mapping: {}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPERATIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+operations:
+  webpage.search:
+    description: Search the web with browser rendering
+    returns: webpage[]
+    params:
+      query: { type: string, required: true, description: "Search query" }
+      limit: { type: integer, default: 5, description: "Number of results" }
+    rest:
+      method: POST
+      url: https://api.firecrawl.dev/v1/search
+      body:
+        query: "{{params.query}}"
+        limit: "{{params.limit | default:5}}"
+      response:
+        root: "data"
+        mapping:
+          url: ".url"
+          title: ".title"
+          snippet: ".description"
+
+  webpage.read:
+    description: Scrape a URL with browser rendering (handles JS-heavy sites)
+    returns: webpage
+    params:
+      url: { type: string, required: true, description: "URL to scrape" }
+    rest:
+      method: POST
+      url: https://api.firecrawl.dev/v1/scrape
+      body:
+        url: "{{params.url}}"
+        formats:
+          - markdown
+        onlyMainContent: true
+      response:
+        root: "data"
+        mapping:
+          url: ".metadata.sourceURL"
+          title: ".metadata.title"
+          content: ".markdown"
 ---
 
 # Firecrawl
