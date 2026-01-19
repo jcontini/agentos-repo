@@ -6,10 +6,6 @@ name: Settings
 icon: icon.svg
 description: Configure AgentOS preferences, plugins, and credentials
 
-# Entity types this app displays
-entities:
-  - settings
-
 # What this app manages (shown in MCP tool description)
 manages:
   - all plugins
