@@ -30,11 +30,12 @@ instructions: |
 adapters:
   webpage:
     terminology: Result
+    # Default mapping for read operations (has full content)
     mapping:
       url: .url
       title: .title
-      snippet: .text
       content: .text
+      favicon: .favicon
       published_at: .publishedDate
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -56,7 +57,12 @@ operations:
         numResults: "{{params.limit | default:5}}"
         type: "auto"
       response:
-        root: "results"
+        root: "/results"
+        # Search results have different shape than read (no .text field)
+        mapping:
+          url: .url
+          title: .title
+          published_at: .publishedDate
 
   webpage.read:
     description: Extract content from a URL
@@ -71,7 +77,8 @@ operations:
           - "{{params.url}}"
         text: true
       response:
-        root: "results[0]"
+        root: "/results/0"
+        # Uses adapter.mapping (default) — has .text for content
 ---
 
 # Exa

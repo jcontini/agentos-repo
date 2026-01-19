@@ -91,7 +91,7 @@ operations:
         parent_id: "{{params.parent_id}}"
         label: "{{params.label}}"
       response:
-        root: results
+        root: /results
 
   task.filter:
     description: Get tasks matching a Todoist filter query
@@ -104,7 +104,7 @@ operations:
       query:
         query: "{{params.query}}"
       response:
-        root: results
+        root: /results
 
   task.get:
     description: Get a specific task by ID
@@ -193,7 +193,7 @@ operations:
       method: GET
       url: https://api.todoist.com/api/v1/projects
       response:
-        root: results
+        root: /results
 
   label.list:
     description: List all labels
@@ -202,7 +202,7 @@ operations:
       method: GET
       url: https://api.todoist.com/api/v1/labels
       response:
-        root: results
+        root: /results
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # UTILITIES

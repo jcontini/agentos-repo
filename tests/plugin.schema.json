@@ -474,7 +474,8 @@
       "properties": {
         "root": {
           "type": "string",
-          "description": "JMESPath to extract data (e.g., 'data.items', 'thread.items')"
+          "description": "JSON Pointer (RFC 6901) to extract data. Must start with '/'. Examples: '/data', '/results/0', '/data/items'",
+          "pattern": "^/.*$"
         },
         "context": {
           "type": "object",

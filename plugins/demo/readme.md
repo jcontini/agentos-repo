@@ -13,13 +13,15 @@ tags: [demo, fun, examples]
 adapters:
   webpage:
     terminology: Web Page
-    # No real mapping needed - demo returns synthetic data
+    mapping: {}  # No real mapping - demo returns synthetic data
 
   task:
     terminology: Task
+    mapping: {}
 
   contact:
     terminology: Contact
+    mapping: {}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # OPERATIONS
@@ -126,7 +128,7 @@ utilities:
       method: GET
       url: "https://wttr.in/{{params.city}}?format=j1"
       response:
-        root: "current_condition[0]"
+        root: "/current_condition/0"
         mapping:
           location: "'{{params.city}}'"
           temp_f: ".temp_F"
@@ -201,7 +203,7 @@ utilities:
       method: GET
       url: "https://official-joke-api.appspot.com/jokes/programming/random"
       response:
-        root: "[0]"
+        root: "/0"
         mapping:
           setup: ".setup"
           punchline: ".punchline"

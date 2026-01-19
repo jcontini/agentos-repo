@@ -56,7 +56,7 @@ operations:
         query: "{{params.query}}"
         limit: "{{params.limit | default:5}}"
       response:
-        root: "data"
+        root: "/data"
         mapping:
           url: ".url"
           title: ".title"
@@ -76,7 +76,7 @@ operations:
           - markdown
         onlyMainContent: true
       response:
-        root: "data"
+        root: "/data"
         mapping:
           url: ".metadata.sourceURL"
           title: ".metadata.title"
