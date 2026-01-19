@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 /**
- * Fast schema validation for pre-commit hook.
- * Validates connector readme.md YAML against JSON Schema.
+ * Plugin validation for pre-commit hook.
+ * 
+ * Checks:
+ * 1. Schema validation - YAML frontmatter matches plugin.schema.json
+ * 2. Test coverage - every operation/utility has a test
  * 
  * Usage: node scripts/validate-schema.mjs [app1] [app2] ...
  *        node scripts/validate-schema.mjs --all
+ *        node scripts/validate-schema.mjs --all --filter exa
  */
 
 import { readFileSync, readdirSync, existsSync } from 'fs';
@@ -34,20 +38,61 @@ function parseFrontmatter(content) {
   return parseYaml(yaml);
 }
 
+// Get all tools (operations + utilities) from frontmatter
+function getTools(frontmatter) {
+  const tools = [];
+  if (frontmatter.operations) {
+    tools.push(...Object.keys(frontmatter.operations));
+  }
+  if (frontmatter.utilities) {
+    tools.push(...Object.keys(frontmatter.utilities));
+  }
+  return tools;
+}
+
+// Find which tools are tested by parsing test files
+function getTestedTools(pluginDir) {
+  const testsDir = join(pluginDir, 'tests');
+  if (!existsSync(testsDir)) return new Set();
+  
+  const testedTools = new Set();
+  const testFiles = readdirSync(testsDir).filter(f => f.endsWith('.test.ts'));
+  
+  for (const file of testFiles) {
+    const content = readFileSync(join(testsDir, file), 'utf-8');
+    // Match tool: 'operation.name' or tool: "operation.name"
+    const matches = content.matchAll(/tool:\s*['"]([^'"]+)['"]/g);
+    for (const match of matches) {
+      testedTools.add(match[1]);
+    }
+  }
+  
+  return testedTools;
+}
+
 // Get all apps or filter by args
 const args = process.argv.slice(2);
+const filterIndex = args.indexOf('--filter');
+const filterValue = filterIndex !== -1 ? args[filterIndex + 1] : null;
 const validateAll = args.includes('--all') || args.length === 0;
 
-const apps = validateAll 
+let apps = validateAll 
   ? readdirSync(APPS_DIR, { withFileTypes: true })
       .filter(d => d.isDirectory())
       .map(d => d.name)
-  : args.filter(a => a !== '--all');
+  : args.filter(a => !a.startsWith('--'));
+
+// Apply filter if specified
+if (filterValue) {
+  apps = apps.filter(app => app.includes(filterValue));
+}
 
 let hasErrors = false;
+let hasCoverageWarnings = false;
 
 for (const app of apps) {
-  const readmePath = join(APPS_DIR, app, 'readme.md');
+  const pluginDir = join(APPS_DIR, app);
+  const readmePath = join(pluginDir, 'readme.md');
   
   if (!existsSync(readmePath)) {
     console.error(`❌ plugins/${app}: readme.md not found`);
@@ -71,13 +116,26 @@ for (const app of apps) {
       console.error(`   ${err.instancePath || '/'}: ${err.message}`);
     }
     hasErrors = true;
+    continue;
+  }
+
+  // Check test coverage (only for valid plugins)
+  const tools = getTools(frontmatter);
+  const testedTools = getTestedTools(pluginDir);
+  const untestedTools = tools.filter(t => !testedTools.has(t));
+  
+  if (untestedTools.length > 0) {
+    console.error(`❌ plugins/${app}: Missing tests for: ${untestedTools.join(', ')}`);
+    hasErrors = true;
+  } else if (tools.length > 0) {
+    console.log(`✓ plugins/${app} (${tools.length} tools, all tested)`);
   } else {
     console.log(`✓ plugins/${app}`);
   }
 }
 
 if (hasErrors) {
-  console.error('\n❌ Schema validation failed');
+  console.error('\n❌ Validation failed');
   process.exit(1);
 } else {
   console.log('\n✅ All plugins valid');

@@ -1,245 +1,388 @@
 # Contributing to AgentOS Community
 
-This repo contains plugins, components, apps, and agent configs — all declarative YAML.
+Declarative YAML for entities, plugins, components, apps, and themes.
 
-| Content Type | What It Is |
-|--------------|------------|
-| **Plugins** | Service integrations (APIs, databases, local apps) |
-| **Components** | Reusable UI building blocks |
-| **Apps** | Capability renderers that compose components |
-| **Agents** | Setup instructions for AI clients |
+**Schema reference:** `tests/plugin.schema.json` — the source of truth for plugin structure.
+
+---
+
+## Architecture Overview
+
+```
+entities/          Universal schemas (what a task/message/webpage IS)
+  graph.yaml       Relationships between entities
+  task.yaml        Task schema
+  webpage.yaml     Webpage schema
+  ...
+
+plugins/           Adapters (how services map to universal entities)
+  todoist/         Maps Todoist API → task entity
+  exa/             Maps Exa API → webpage entity
+  ...
+
+components/        UI building blocks (TSX)
+apps/              Activity → component wiring (YAML)
+themes/            Visual styling (CSS)
+```
+
+**The flow:** Entities define universal schemas → Plugins adapt service APIs to those schemas → Components render the data.
+
+---
+
+## Entities
+
+Entities are universal schemas that define what something IS, regardless of which service provides it.
+
+**Location:** `entities/{entity}.yaml`
+
+```yaml
+id: task
+name: Task
+description: A unit of work to be done
+
+properties:
+  id: { type: string, required: true }
+  title: { type: string, required: true }
+  completed: { type: boolean, default: false }
+  priority: { type: integer, min: 1, max: 4 }
+  due_date: { type: date }
+  # ...
+
+operations: [list, get, create, update, delete, complete]
+```
+
+**Relationships** are defined in `entities/graph.yaml`:
+
+```yaml
+relationships:
+  task_project:
+    from: task
+    to: project
+    description: The project a task belongs to
+
+  task_labels:
+    from: task
+    to: label
+    description: Labels applied to the task
+```
+
+When creating a plugin, check `entities/{entity}.yaml` to see what properties to map.
 
 ---
 
 ## Plugins
 
-Plugins connect AgentOS to external services. Each plugin is a YAML config that describes how to talk to an API — AgentOS handles auth, execution, and response mapping automatically.
+Plugins are adapters that transform service-specific API responses into universal entities.
 
-## Creating a Plugin
-
-```bash
-npm run new-plugin myservice           # API with full CRUD
-npm run new-plugin myservice --readonly # API, read-only
-npm run new-plugin myservice --local    # Local (no auth needed)
-```
-
-This generates everything you need: config, icon, and tests. Edit the generated `readme.md` with your API details and you're done.
-
-## How It Works
-
-A plugin is just a `readme.md` with YAML frontmatter:
+### Structure
 
 ```yaml
----
-id: myservice
-name: My Service
-description: What it does
-auth:
-  type: api_key
-  header: Authorization
+adapters:     # How API data maps to entity schemas
+operations:   # Entity CRUD (returns: entity, entity[], or void)
+utilities:    # Helpers with custom return shapes (optional)
+```
 
-actions:
-  list:
-    operation: read
+**Examples:** `plugins/todoist/` (REST API), `plugins/apple-calendar/` (Swift/native)
+
+### Adapters
+
+Map API fields to entity properties. Defined once, applied to all operations.
+
+```yaml
+adapters:
+  task:
+    terminology: Task           # What the service calls it
+    relationships:              # Which graph relationships this plugin supports
+      task_project: full        # full | read_only | write_only | none
+      task_labels: full
+    mapping:
+      id: .id
+      title: .content           # API field → entity property
+      completed: .is_completed
+      priority: ".priority | invert:5"  # Transform if needed
+      _project_id: .project_id  # Relationship data (underscore prefix)
+```
+
+**Relationship fields** use underscore prefix (`_project_id`) — these connect to `graph.yaml` relationships.
+
+### Operations
+
+Entity CRUD. Return type determines which adapter mapping applies.
+
+**Naming:** `entity.operation` — `task.list`, `webpage.search`, `event.create`
+
+**Return types:** `entity` (single), `entity[]` (array), `void` (no data returned)
+
+```yaml
+operations:
+  task.list:
+    description: List all tasks
+    returns: task[]
     rest:
       method: GET
-      url: https://api.example.com/items
+      url: https://api.example.com/tasks
       response:
-        mapping:
-          id: "[].id"
-          title: "[].name"
----
-
-# My Service
-
-Setup instructions and documentation here.
+        root: "/data"           # JSON Pointer — must start with /
 ```
 
-**Key concepts:**
+### Executors
 
-- **`operation`** — Every action declares what it does: `read`, `create`, `update`, or `delete`. This powers our security features and test requirements.
+Each operation uses exactly one executor. Available types:
 
-- **`auth`** — Declare the auth type and AgentOS injects credentials automatically. Never put secrets in configs.
+| Executor | Use case | Required fields |
+|----------|----------|-----------------|
+| `rest` | HTTP APIs | `url`, optional `method`, `query`, `body` |
+| `graphql` | GraphQL APIs | `query`, optional `variables` |
+| `sql` | Database queries | `query` |
+| `swift` | macOS native APIs | `script` |
+| `command` | Shell commands | `binary` |
+| `csv` | CSV file parsing | `path` |
 
-- **Response mapping** — Transform API responses into a standard format. The `[].field` syntax maps arrays, `.field` maps single objects.
+#### REST Executor
 
-## Testing
-
-Tests are auto-generated and validated by our linter. The system:
-
-1. **Infers requirements from your config** — If your plugin has `auth`, tests must handle missing credentials gracefully. If it has `create` operations, tests must clean up test data.
-
-2. **Enforces standards automatically** — The pre-commit hook runs the linter. If something's missing, it tells you what to add.
-
-3. **Supports exemptions** — Edge cases can opt out with a documented reason in the YAML.
-
-```bash
-npm run lint:tests           # Check your tests
-npm test plugins/myservice   # Run your tests
+```yaml
+operations:
+  task.list:
+    returns: task[]
+    rest:
+      method: GET
+      url: https://api.example.com/tasks
+      query:
+        filter: "{{params.filter}}"
+      response:
+        root: "/data"
 ```
 
-## Commands
+#### SQL Executor
 
-```bash
-npm run new-plugin <name>    # Create a new plugin
-npm run lint:tests           # Validate test patterns
-npm run validate             # Validate plugin schemas
-npm test                     # Run all tests
+```yaml
+operations:
+  message.list:
+    returns: message[]
+    sql:
+      query: |
+        SELECT id, text, date FROM messages
+        WHERE conversation_id = '{{params.conversation_id}}'
+        ORDER BY date DESC
+        LIMIT {{params.limit | default: 50}}
 ```
 
-## Git Hooks
+#### Swift Executor (macOS only)
 
-Everything is validated before you can commit:
+For native macOS APIs (EventKit, Contacts, etc.):
 
-- **Schema validation** — Catches malformed YAML
-- **Security checks** — Blocks credential exposure
-- **Test linting** — Ensures tests follow standards
+```yaml
+operations:
+  event.list:
+    returns: event[]
+    swift:
+      script: |
+        import EventKit
+        import Foundation
+        
+        // Swift code that prints JSON to stdout
+        let args = CommandLine.arguments
+        let days = args.count > 1 ? Int(args[1]) ?? 7 : 7
+        // ... implementation ...
+        print(jsonString)
+      args:
+        - "{{params.days}}"
+        - "{{params.calendar_id}}"
+```
 
-If the hook fails, it tells you exactly what to fix.
+#### Command Executor
 
-## Executors
+```yaml
+operations:
+  file.list:
+    returns: file[]
+    command:
+      binary: /usr/bin/find
+      args:
+        - "{{params.path}}"
+        - "-type"
+        - "f"
+```
 
-Plugins support multiple backends:
+### Template Syntax
 
-| Executor | Use Case |
-|----------|----------|
-| `rest:` | REST APIs |
-| `graphql:` | GraphQL APIs |
-| `sql:` | Local databases |
-| `swift:` | macOS native APIs |
-| `command:` | Shell commands |
+Parameters are substituted using `{{params.name}}` syntax:
 
-See existing plugins for examples: `linear` (GraphQL), `exa` (REST), `imessage` (SQL), `apple-contacts` (Swift).
+```yaml
+params:
+  limit: { type: integer, default: 50 }
+  query: { type: string }
 
-## Philosophy
+rest:
+  url: https://api.example.com/search
+  query:
+    q: "{{params.query}}"
+    limit: "{{params.limit}}"
+```
 
-**We enforce, not instruct.** The scaffold generates correct code. The linter catches mistakes. The hooks block bad commits. You focus on the API integration — we handle the standards.
+**Filters:** `{{params.limit | default: 50}}` — provides fallback value
 
-**Real credentials, real APIs.** Tests call actual APIs with your production credentials. No mocking. This catches real bugs.
+### Utilities
 
-**Graceful degradation.** Tests skip if credentials aren't configured. Contributors without API keys can still run the test suite.
+Helpers returning custom shapes (not entities).
 
-**Clean up after yourself.** If tests create data, they delete it. The linter enforces this for any plugin with `create` operations.
+```yaml
+utilities:
+  move_task:
+    description: Move task to different project
+    params:
+      id: { type: string, required: true }
+      project_id: { type: string, required: true }
+    returns:
+      success: boolean
+    rest: ...
+```
+
+**Naming:** `verb_noun` — `move_task`, `get_teams`
+
+### Key Rules
+
+| Rule | Details |
+|------|---------|
+| JSON Pointer for `response.root` | Must start with `/` (e.g., `/data`, `/results/0`) |
+| Single source of truth | Mapping in adapters, not duplicated per operation |
+| Relationship fields use `_` prefix | `_project_id`, `_parent_id` |
+| Handle API quirks internally | Use mutation handlers, not instructions |
+
+### Mutation Handlers
+
+When an API can't update a field through the normal endpoint:
+
+```yaml
+adapters:
+  task:
+    relationships:
+      task_project:
+        support: full
+        mutation: move_task  # Routes project_id changes through utility
+```
+
+### Operation-Level Mapping Override
+
+When API returns different shapes per operation:
+
+```yaml
+operations:
+  webpage.search:
+    returns: webpage[]
+    rest:
+      response:
+        mapping:           # Override adapter mapping
+          url: .url
+          title: .title    # Search results lack full content
+```
+
+### Checklist
+
+- [ ] `npm run validate` passes (schema validation)
+- [ ] Parameters verified against API docs
+- [ ] Mapping covers entity properties (`entities/{entity}.yaml`)
+- [ ] Relationship fields use `_` prefix
+- [ ] API quirks handled internally
+- [ ] Functional tests pass (`npm test`)
 
 ---
 
 ## Components
 
-Components are reusable UI pieces. They compose atoms (text, image, icon, container) or other components.
+TSX files dynamically loaded and transpiled.
 
-**Location:** `components/{component-id}/readme.md`
+**Location:** `components/{name}.tsx`
 
-```yaml
----
-id: search-result
-name: Search Result
-description: A search result card
+**Rules:** Import React explicitly, export default, TypeScript interfaces, no heavy deps.
 
-props:
-  title: string
-  url: string
-  snippet: string?
-
-root:
-  type: container
-  direction: column
-  children:
-    - type: text
-      value: "{{props.title}}"
-      style: bold
-    # ...
----
-
-# Search Result
-
-Documentation here.
-```
-
-See `components/url-bar/` and `components/search-result/` for examples.
+**Examples:** `components/list.tsx`, `components/markdown.tsx`
 
 ---
 
 ## Apps
 
-Apps render capabilities. They define how plugin responses are displayed.
+YAML wiring activities to components.
 
-**Location:** `apps/{app-id}/readme.md`
+**Location:** `apps/{name}.yaml`
 
-```yaml
----
-id: browser
-name: Browser
-capabilities: [web_search, web_read]
+**Example:** `apps/browser.yaml`
 
-views:
-  search:
-    when: "capability == 'web_search'"
-    root:
-      type: container
-      children:
-        - component: url-bar
-          value: "{{request.query}}"
-        # ...
 ---
 
-# Browser
+## Themes
 
-Documentation here.
+CSS and assets in `themes/{family}/{theme-id}/`.
+
+**Example:** `themes/os/macos9/`
+
+---
+
+## Testing
+
+### Test Types
+
+| Type | Command | What it checks |
+|------|---------|----------------|
+| **Validation** | `npm run validate` | Schema + test coverage — run this first |
+| **Functional tests** | `npm test` | Actually calls APIs, verifies behavior |
+
+### Validation
+
+`npm run validate` checks two things:
+
+1. **Schema validation** — YAML structure matches `tests/plugin.schema.json`
+2. **Test coverage** — every operation and utility has a test
+
+```bash
+npm run validate                    # All plugins
+npm run validate -- --filter exa    # Single plugin
 ```
 
-See `apps/browser/` for an example.
+A plugin fails validation if any operation/utility lacks a test. The validator looks for `tool: 'operation.name'` in your test files.
 
----
+### Functional Tests
 
-## Agents
+Verify real API behavior:
 
-Agents are setup instructions for AI clients. Documentation only — not executable.
-
-**Location:** `agents/{agent-id}/readme.md`
-
-```yaml
----
-id: cursor
-name: Cursor
-description: AI-powered code editor
----
-
-# Cursor Setup
-
-Setup instructions here.
+```bash
+npm test                                    # All tests
+npx vitest run plugins/exa/tests           # Single plugin
 ```
 
-See `agents/cursor/` for an example.
+### Writing Tests
+
+Tests live in `plugins/{name}/tests/{name}.test.ts`. Every operation needs at least one test.
+
+```typescript
+import { aos, TEST_PREFIX } from '../../../tests/utils/fixtures';
+
+describe('My Plugin', () => {
+  it('operation.list returns array', async () => {
+    const result = await aos().call('UsePlugin', {
+      plugin: 'my-plugin',
+      tool: 'entity.list',  // This tool is now marked as tested
+      params: {},
+    });
+    expect(Array.isArray(result)).toBe(true);
+  });
+});
+```
+
+See `plugins/todoist/tests/` or `plugins/apple-calendar/tests/` for comprehensive examples.
 
 ---
 
-## Reference
+## Commands
 
-| Resource | Purpose |
-|----------|---------|
-| `tests/plugin.schema.json` | Schema for valid plugin configs |
-| `plugins/linear/` | GraphQL plugin example |
-| `plugins/exa/` | REST plugin example |
-| `plugins/goodreads/` | Local file plugin example |
-| `components/url-bar/` | Component example |
-| `apps/browser/` | App example |
-| `agents/cursor/` | Agent example |
+```bash
+npm run new-plugin <name>    # Create plugin scaffold
+npm run validate             # Schema validation (run first!)
+npm test                     # Functional tests
+```
 
 ---
 
-## License & Contributions
+## License
 
-This repository is **MIT licensed** — you can use, modify, and redistribute freely.
-
-**By contributing, you agree that:**
-
-1. Your contribution is MIT licensed and will remain open source
-2. A Third Party, LLC (the company behind AgentOS) may use your contribution in official releases, including commercial offerings
-3. You have the right to make this contribution
-
-**What you get:**
-
-- Your code stays open forever under MIT
-- Credit in commit history
-
-We're exploring ways to share revenue with contributors in the future, but this is not a commitment or guarantee.
+MIT licensed. Contributions are MIT licensed and may be used in official releases including commercial offerings.

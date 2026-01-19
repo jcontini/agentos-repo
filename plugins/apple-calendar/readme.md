@@ -1,7 +1,7 @@
 ---
 id: apple-calendar
 name: Apple Calendar
-description: Access macOS Calendar and Contacts via native APIs
+description: Access macOS Calendar via native EventKit APIs
 icon: icon.png
 color: "#000000"
 tags: [calendar, events, scheduling]
@@ -9,35 +9,45 @@ tags: [calendar, events, scheduling]
 website: https://www.apple.com/macos/
 platform: macos
 
-# No auth block = no credentials needed (local system access)
-# Uses macOS permissions: Calendar, Contacts
-
 instructions: |
-  Apple provider accesses local macOS Calendar and Contacts.
+  Apple Calendar accesses local macOS Calendar via EventKit.
   
   **Requirements:**
   - macOS only
   - Grant permissions in System Settings → Privacy & Security:
     - Calendars → Full Access for Cursor/Terminal
-    - Contacts → Allow access for Cursor/Terminal
   
-  **Calendar notes:**
+  **Notes:**
   - All calendars configured in macOS Calendar.app are accessible (iCloud, Google, etc.)
   - Subscribed calendars (ICS feeds like US Holidays) are read-only
   - Recurring events: updates/deletes only affect the single occurrence
   - Times use system timezone
-  
-  **Contacts notes:**
-  - Contact IDs can change after iCloud sync - query by name after create
-  - Phone numbers are auto-normalized: 5125551234 → +15125551234
-  - URL labels are auto-detected: github.com → "GitHub"
 
-# Action implementations (merged from mapping.yaml)
-actions:
-  calendars:
-    operation: read
-    label: "List calendars"
+adapters:
+  calendar:
+    terminology: Calendar
+    mapping:
+      id: .id
+      name: .name
+      color: .color
+      is_subscribed: .is_readonly
+
+  event:
+    terminology: Event
+    mapping:
+      id: .id
+      title: .title
+      description: .description
+      start: .start
+      end: .end
+      all_day: .all_day
+      location: .location
+      recurrence: .recurrence
+
+operations:
+  calendar.list:
     description: List all available calendars
+    returns: calendar[]
     swift:
       script: |
         import EventKit
@@ -89,24 +99,16 @@ actions:
         } else {
             print("[]")
         }
-      response:
-        mapping:
-          id: "[].id"
-          name: "[].name"
-          color: "[].color"
-          is_readonly: "[].is_readonly"
-          connector: "'apple'"
 
-  list:
-    operation: read
-    label: "List events"
+  event.list:
     description: List calendar events within a date range
+    returns: event[]
     params:
-      days: { type: number, default: 7, description: "Days from today (1-30)" }
+      days: { type: integer, default: 7, description: "Days from today (1-30)" }
       past: { type: boolean, default: false, description: "Look backward instead of forward" }
       calendar_id: { type: string, description: "Filter by calendar name (partial match)" }
       query: { type: string, description: "Search title, location, or description" }
-      limit: { type: number, default: 50 }
+      limit: { type: integer, default: 50 }
       exclude_all_day: { type: boolean, default: false, description: "Exclude all-day events" }
     swift:
       script: |
@@ -135,7 +137,6 @@ actions:
             exit(1)
         }
         
-        // Parse arguments
         let args = CommandLine.arguments
         let days = args.count > 1 ? Int(args[1]) ?? 7 : 7
         let past = args.count > 2 && args[2] == "true"
@@ -144,7 +145,6 @@ actions:
         let limit = args.count > 5 && args[5] != "" ? Int(args[5]) : nil
         let excludeAllDay = args.count > 6 && args[6] == "true"
         
-        // Date range
         let calendar = Calendar.current
         let now = Date()
         let startOfDay = calendar.startOfDay(for: now)
@@ -159,7 +159,6 @@ actions:
             endDate = calendar.date(byAdding: .day, value: days, to: startOfDay)!
         }
         
-        // Filter calendars
         var calendarsToSearch: [EKCalendar]? = nil
         if let filter = calendarFilter {
             calendarsToSearch = store.calendars(for: .event).filter {
@@ -167,16 +166,13 @@ actions:
             }
         }
         
-        // Query events
         let predicate = store.predicateForEvents(withStart: startDate, end: endDate, calendars: calendarsToSearch)
         var events = store.events(matching: predicate)
         
-        // Filter all-day
         if excludeAllDay {
             events = events.filter { !$0.isAllDay }
         }
         
-        // Filter by query
         if let query = titleQuery {
             events = events.filter {
                 ($0.title ?? "").lowercased().contains(query) ||
@@ -185,23 +181,19 @@ actions:
             }
         }
         
-        // Sort
         if past {
             events.sort { $0.startDate > $1.startDate }
         } else {
             events.sort { $0.startDate < $1.startDate }
         }
         
-        // Limit
         if let lim = limit, lim > 0 {
             events = Array(events.prefix(lim))
         }
         
-        // Formatters
         let isoFormatter = ISO8601DateFormatter()
         isoFormatter.formatOptions = [.withInternetDateTime]
         
-        // Build JSON
         var output: [[String: Any]] = []
         for event in events {
             var dict: [String: Any] = [
@@ -209,9 +201,7 @@ actions:
                 "title": event.title ?? "",
                 "start": isoFormatter.string(from: event.startDate),
                 "end": isoFormatter.string(from: event.endDate),
-                "all_day": event.isAllDay,
-                "calendar_id": event.calendar.calendarIdentifier,
-                "calendar_name": event.calendar.title
+                "all_day": event.isAllDay
             ]
             if let location = event.location, !location.isEmpty {
                 dict["location"] = location
@@ -219,23 +209,8 @@ actions:
             if let notes = event.notes, !notes.isEmpty {
                 dict["description"] = notes
             }
-            if event.hasAttendees, let attendees = event.attendees {
-                dict["attendees"] = attendees.map { attendee in
-                    var a: [String: Any] = ["name": attendee.name ?? ""]
-                    if attendee.url.scheme == "mailto" {
-                        a["email"] = attendee.url.absoluteString.replacingOccurrences(of: "mailto:", with: "")
-                    }
-                    switch attendee.participantStatus {
-                    case .accepted: a["status"] = "accepted"
-                    case .declined: a["status"] = "declined"
-                    case .tentative: a["status"] = "tentative"
-                    default: a["status"] = "pending"
-                    }
-                    return a
-                }
-            }
             if event.hasRecurrenceRules, let rules = event.recurrenceRules, let rule = rules.first {
-                dict["recurrence"] = ["rule": rule.description]
+                dict["recurrence"] = rule.description
             }
             output.append(dict)
         }
@@ -247,32 +222,16 @@ actions:
             print("[]")
         }
       args:
-        - "{{params.days | default: 7}}"
-        - "{{params.past | default: false}}"
+        - "{{params.days}}"
+        - "{{params.past}}"
         - "{{params.calendar_id}}"
         - "{{params.query}}"
-        - "{{params.limit | default: 50}}"
-        - "{{params.exclude_all_day | default: false}}"
-      response:
-        mapping:
-          id: "[].id"
-          title: "[].title"
-          description: "[].description"
-          start: "[].start"
-          end: "[].end"
-          all_day: "[].all_day"
-          location: "[].location"
-          calendar:
-            id: "[].calendar_id"
-            name: "[].calendar_name"
-          attendees: "[].attendees"
-          recurrence: "[].recurrence"
-          connector: "'apple'"
+        - "{{params.limit}}"
+        - "{{params.exclude_all_day}}"
 
-  get:
-    operation: read
-    label: "Get event"
+  event.get:
     description: Get full details of a specific event
+    returns: event
     params:
       id: { type: string, required: true, description: "Event ID" }
     swift:
@@ -316,9 +275,7 @@ actions:
             "title": event.title ?? "",
             "start": isoFormatter.string(from: event.startDate),
             "end": isoFormatter.string(from: event.endDate),
-            "all_day": event.isAllDay,
-            "calendar_id": event.calendar.calendarIdentifier,
-            "calendar_name": event.calendar.title
+            "all_day": event.isAllDay
         ]
         if let location = event.location, !location.isEmpty {
             dict["location"] = location
@@ -326,30 +283,8 @@ actions:
         if let notes = event.notes, !notes.isEmpty {
             dict["description"] = notes
         }
-        if let url = event.url {
-            dict["url"] = url.absoluteString
-        }
-        if event.hasAttendees, let attendees = event.attendees {
-            dict["attendees"] = attendees.map { attendee in
-                var a: [String: Any] = ["name": attendee.name ?? ""]
-                if attendee.url.scheme == "mailto" {
-                    a["email"] = attendee.url.absoluteString.replacingOccurrences(of: "mailto:", with: "")
-                }
-                switch attendee.participantStatus {
-                case .accepted: a["status"] = "accepted"
-                case .declined: a["status"] = "declined"
-                case .tentative: a["status"] = "tentative"
-                default: a["status"] = "pending"
-                }
-                a["optional"] = !attendee.isCurrentUser && attendee.participantRole == .optional
-                return a
-            }
-        }
         if event.hasRecurrenceRules, let rules = event.recurrenceRules {
-            dict["recurrence"] = ["rule": rules.map { $0.description }.joined(separator: ";")]
-        }
-        if event.hasAlarms, let alarms = event.alarms {
-            dict["reminders"] = alarms.map { Int($0.relativeOffset / 60) }
+            dict["recurrence"] = rules.map { $0.description }.joined(separator: ";")
         }
         
         if let jsonData = try? JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted]),
@@ -358,27 +293,10 @@ actions:
         }
       args:
         - "{{params.id}}"
-      response:
-        mapping:
-          id: ".id"
-          title: ".title"
-          description: ".description"
-          start: ".start"
-          end: ".end"
-          all_day: ".all_day"
-          location: ".location"
-          url: ".url"
-          calendar:
-            id: ".calendar_id"
-            name: ".calendar_name"
-          attendees: ".attendees"
-          recurrence: ".recurrence"
-          connector: "'apple'"
 
-  create:
-    operation: create
-    label: "Create event"
+  event.create:
     description: Create a new calendar event
+    returns: event
     params:
       title: { type: string, required: true, description: "Event title" }
       start: { type: string, required: true, description: "Start (YYYY-MM-DD HH:MM or YYYY-MM-DD)" }
@@ -414,7 +332,6 @@ actions:
             exit(1)
         }
         
-        // Parse arguments
         let args = CommandLine.arguments
         guard args.count > 2 else {
             fputs("{\"error\": \"title and start required\"}\n", stderr)
@@ -429,7 +346,6 @@ actions:
         let notes = args.count > 6 && args[6] != "" ? args[6] : ""
         let allDay = args.count > 7 && args[7] == "true"
         
-        // Find calendar
         var calendar: EKCalendar?
         if !calName.isEmpty {
             calendar = store.calendars(for: .event).first { 
@@ -444,7 +360,6 @@ actions:
             exit(1)
         }
         
-        // Parse dates
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone.current
         
@@ -474,7 +389,6 @@ actions:
             exit(1)
         }
         
-        // Create event
         let event = EKEvent(eventStore: store)
         event.title = title
         event.startDate = start
@@ -489,7 +403,19 @@ actions:
             try store.save(event, span: .thisEvent)
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime]
-            print("{\"id\":\"\(event.eventIdentifier ?? "")\",\"title\":\"\(title)\",\"start\":\"\(isoFormatter.string(from: start))\",\"calendar_name\":\"\(targetCalendar.title)\",\"status\":\"created\"}")
+            var dict: [String: Any] = [
+                "id": event.eventIdentifier ?? "",
+                "title": title,
+                "start": isoFormatter.string(from: start),
+                "end": isoFormatter.string(from: end),
+                "all_day": event.isAllDay
+            ]
+            if !location.isEmpty { dict["location"] = location }
+            if !notes.isEmpty { dict["description"] = notes }
+            if let jsonData = try? JSONSerialization.data(withJSONObject: dict, options: []),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                print(jsonString)
+            }
         } catch {
             fputs("{\"error\": \"\(error.localizedDescription)\"}\n", stderr)
             exit(1)
@@ -501,21 +427,11 @@ actions:
         - "{{params.calendar_id}}"
         - "{{params.location}}"
         - "{{params.description}}"
-        - "{{params.all_day | default: false}}"
-      response:
-        mapping:
-          id: ".id"
-          title: ".title"
-          start: ".start"
-          calendar:
-            name: ".calendar_name"
-          status: ".status"
-          connector: "'apple'"
+        - "{{params.all_day}}"
 
-  update:
-    operation: update
-    label: "Update event"
+  event.update:
     description: Update an existing calendar event
+    returns: event
     params:
       id: { type: string, required: true, description: "Event ID" }
       title: { type: string, description: "New title" }
@@ -593,7 +509,21 @@ actions:
         
         do {
             try store.save(event, span: .thisEvent)
-            print("{\"id\":\"\(event.eventIdentifier ?? uid)\",\"title\":\"\(event.title ?? "")\",\"calendar_name\":\"\(event.calendar.title)\",\"status\":\"updated\"}")
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            var dict: [String: Any] = [
+                "id": event.eventIdentifier ?? uid,
+                "title": event.title ?? "",
+                "start": isoFormatter.string(from: event.startDate),
+                "end": isoFormatter.string(from: event.endDate),
+                "all_day": event.isAllDay
+            ]
+            if let loc = event.location, !loc.isEmpty { dict["location"] = loc }
+            if let desc = event.notes, !desc.isEmpty { dict["description"] = desc }
+            if let jsonData = try? JSONSerialization.data(withJSONObject: dict, options: []),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                print(jsonString)
+            }
         } catch {
             fputs("{\"error\": \"\(error.localizedDescription)\"}\n", stderr)
             exit(1)
@@ -606,19 +536,10 @@ actions:
         - "{{params.location}}"
         - "{{params.description}}"
         - "{{params.calendar_id}}"
-      response:
-        mapping:
-          id: ".id"
-          title: ".title"
-          calendar:
-            name: ".calendar_name"
-          status: ".status"
-          connector: "'apple'"
 
-  delete:
-    operation: delete
-    label: "Delete event"
+  event.delete:
     description: Delete a calendar event
+    returns: void
     params:
       id: { type: string, required: true, description: "Event ID" }
     swift:
@@ -654,22 +575,15 @@ actions:
             exit(1)
         }
         
-        let title = event.title ?? "Untitled"
-        
         do {
             try store.remove(event, span: .thisEvent)
-            print("{\"status\":\"deleted\",\"title\":\"\(title)\"}")
+            print("{\"success\":true}")
         } catch {
             fputs("{\"error\": \"\(error.localizedDescription)\"}\n", stderr)
             exit(1)
         }
       args:
         - "{{params.id}}"
-      response:
-        mapping:
-          status: ".status"
-          title: ".title"
-          connector: "'apple'"
 ---
 
 # Apple
