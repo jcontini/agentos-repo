@@ -2,7 +2,7 @@
  * Stack Layout Primitive
  * 
  * Arranges children in a flex stack (horizontal or vertical).
- * Pure layout component with no behavior logic.
+ * Uses CSS classes and custom properties so themes can style it.
  * 
  * @example
  * ```yaml
@@ -15,9 +15,15 @@
  *     - component: text-input
  *       props:
  *         placeholder: "Search..."
- *     - component: button
- *       props:
- *         label: "Go"
+ * ```
+ * 
+ * Theme CSS example:
+ * ```css
+ * .stack { display: flex; gap: var(--stack-gap, 0); }
+ * .stack[data-direction="vertical"] { flex-direction: column; }
+ * .stack[data-direction="horizontal"] { flex-direction: row; }
+ * .stack[data-align="center"] { align-items: center; }
+ * .stack[data-justify="between"] { justify-content: space-between; }
  * ```
  */
 
@@ -46,50 +52,30 @@ interface StackProps {
 
 export function Stack({
   direction = 'vertical',
-  gap = '0',
-  align = 'stretch',
-  justify = 'start',
+  gap,
+  align,
+  justify,
   wrap = false,
   fill = false,
   padding,
   children,
   className = '',
 }: StackProps) {
-  // Map justify values to CSS
-  const justifyMap: Record<string, string> = {
-    start: 'flex-start',
-    center: 'center',
-    end: 'flex-end',
-    between: 'space-between',
-    around: 'space-around',
-    evenly: 'space-evenly',
-  };
-
-  // Map align values to CSS
-  const alignMap: Record<string, string> = {
-    start: 'flex-start',
-    center: 'center',
-    end: 'flex-end',
-    stretch: 'stretch',
-    baseline: 'baseline',
-  };
-
+  // Pass layout values as CSS custom properties for theme control
   const style: CSSProperties = {
-    display: 'flex',
-    flexDirection: direction === 'vertical' ? 'column' : 'row',
-    gap,
-    alignItems: alignMap[align],
-    justifyContent: justifyMap[justify],
-    flexWrap: wrap ? 'wrap' : 'nowrap',
-    ...(fill && { flex: 1 }),
-    ...(padding && { padding }),
-  };
+    ...(gap && { '--stack-gap': gap }),
+    ...(padding && { '--stack-padding': padding }),
+  } as CSSProperties;
 
   return (
     <div 
       className={`stack ${className}`}
       data-direction={direction}
-      style={style}
+      data-align={align}
+      data-justify={justify}
+      data-wrap={wrap || undefined}
+      data-fill={fill || undefined}
+      style={Object.keys(style).length > 0 ? style : undefined}
     >
       {children}
     </div>

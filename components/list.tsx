@@ -8,8 +8,7 @@
  * - Loading and error states
  * - Full accessibility (ARIA roles, focus management)
  * 
- * The framework (AppRenderer) handles loading item components and evaluating
- * template props. This component just renders what it's given.
+ * Uses Zod for runtime prop validation — catches YAML typos and wrong types.
  * 
  * @example
  * ```yaml
@@ -24,42 +23,77 @@
  */
 
 import { useState, useRef, useEffect, Children, ReactNode, KeyboardEvent, useCallback } from 'react';
+import { z } from 'zod';
 
-interface ListProps {
-  /** Original data items (used for callbacks to identify which item was selected) */
-  items?: Array<{ id?: string; [key: string]: unknown }>;
-  /** Pre-rendered item components (from AppRenderer children pattern) */
-  children?: ReactNode;
+// =============================================================================
+// Prop Schema (Zod)
+// =============================================================================
+
+/**
+ * Schema for List props — validates at runtime, applies defaults.
+ * Components can export their schema for documentation and tooling.
+ */
+export const ListPropsSchema = z.object({
+  /** Original data items (used for callbacks) */
+  items: z.array(z.object({ id: z.string().optional() }).passthrough()).default([]),
+  /** Pre-rendered item components */
+  children: z.any().optional(),
   /** Layout direction */
-  layout?: 'vertical' | 'horizontal';
-  /** Visual variant for different use cases */
-  variant?: 'default' | 'chat' | 'cards';
+  layout: z.enum(['vertical', 'horizontal']).default('vertical'),
+  /** Visual variant */
+  variant: z.enum(['default', 'chat', 'cards']).default('default'),
   /** Show loading state */
-  loading?: boolean;
-  /** Error message to display */
-  error?: string;
-  /** Empty state message when no items */
-  emptyMessage?: string;
-  /** Fired when an item is clicked/selected */
-  onSelect?: (item: unknown, index: number) => void;
-  /** Fired when an item is double-clicked */
-  onDoubleClick?: (item: unknown, index: number) => void;
-  /** Accessibility label for the list */
-  'aria-label'?: string;
-}
+  loading: z.boolean().default(false),
+  /** Error message */
+  error: z.string().optional(),
+  /** Empty state message */
+  emptyMessage: z.string().default('No items'),
+  /** Select handler */
+  onSelect: z.function().args(z.any(), z.number()).returns(z.void()).optional(),
+  /** Double-click handler */
+  onDoubleClick: z.function().args(z.any(), z.number()).returns(z.void()).optional(),
+  /** Accessibility label */
+  'aria-label': z.string().default('List'),
+});
 
-export function List({
-  items = [],
-  children,
-  layout = 'vertical',
-  variant = 'default',
-  loading = false,
-  error,
-  emptyMessage = 'No items',
-  onSelect,
-  onDoubleClick,
-  'aria-label': ariaLabel = 'List',
-}: ListProps) {
+/** Inferred TypeScript type from schema */
+export type ListProps = z.infer<typeof ListPropsSchema>;
+
+// =============================================================================
+// Component
+// =============================================================================
+
+export function List(rawProps: unknown) {
+  // Validate props and apply defaults
+  const parseResult = ListPropsSchema.safeParse(rawProps);
+  
+  if (!parseResult.success) {
+    // Log validation errors for debugging
+    console.error('[List] Invalid props:', parseResult.error.format());
+    // Render error state instead of crashing
+    return (
+      <div className="list list--error" role="alert">
+        <div className="list-error">
+          <span className="list-error-icon" aria-hidden="true">⚠</span>
+          <span className="list-error-text">Invalid list configuration</span>
+        </div>
+      </div>
+    );
+  }
+
+  const {
+    items,
+    children,
+    layout,
+    variant,
+    loading,
+    error,
+    emptyMessage,
+    onSelect,
+    onDoubleClick,
+    'aria-label': ariaLabel,
+  } = parseResult.data;
+
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const listRef = useRef<HTMLDivElement>(null);
   const childArray = Children.toArray(children);
@@ -85,17 +119,11 @@ export function List({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => {
-          const next = prev < itemCount - 1 ? prev + 1 : prev;
-          return next;
-        });
+        setSelectedIndex(prev => prev < itemCount - 1 ? prev + 1 : prev);
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => {
-          const next = prev > 0 ? prev - 1 : 0;
-          return next;
-        });
+        setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
         break;
       case 'Home':
         e.preventDefault();
