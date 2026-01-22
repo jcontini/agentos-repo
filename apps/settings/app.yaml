@@ -40,28 +40,29 @@ menus:
 
 views:
   # Main tabbed settings panel
-  # Note: Unlike Browser (activity-driven), Settings renders immediately
-  # Individual components fetch their own data (plugin-list, future toggle-group)
+  # Uses data-driven components that fetch from /api/settings
   main:
     title: Settings
     layout:
       - component: tabs
         props:
           tabs:
-            - id: general
-              label: General
-            - id: plugins
-              label: Plugins
+            - id: features
+              label: Features
             - id: privacy
               label: Privacy
+            - id: plugins
+              label: Plugins
+            - id: handlers
+              label: Handlers
             - id: accounts
               label: Accounts
             - id: about
               label: About
-          default: general
+          default: features
           activeTab: "{{params.tab}}"
         slots:
-          general:
+          features:
             component: layout/scroll-area
             children:
               - component: layout/stack
@@ -69,49 +70,21 @@ views:
                   gap: 16
                   padding: 16
                 children:
-                  - component: text
+                  - component: settings-panel
                     props:
-                      content: Features
-                      variant: title
-                  - component: layout/stack
+                      category: features
+
+          privacy:
+            component: layout/scroll-area
+            children:
+              - component: layout/stack
+                props:
+                  gap: 16
+                  padding: 16
+                children:
+                  - component: settings-panel
                     props:
-                      gap: 8
-                    children:
-                      - component: toggle
-                        props:
-                          label: Enable activity logging
-                          checked: "{{activity.response.settings.logging_enabled}}"
-                        on_change:
-                          tool: Settings
-                          action: set
-                          params:
-                            key: logging_enabled
-                      - component: toggle
-                        props:
-                          label: Allow terminal access
-                          checked: "{{activity.response.settings.terminal_enabled}}"
-                        on_change:
-                          tool: Settings
-                          action: set
-                          params:
-                            key: terminal_enabled
-                      - component: toggle
-                        props:
-                          label: Show window when agent connects
-                          checked: "{{activity.response.settings.show_app_when_server_starts}}"
-                        on_change:
-                          tool: Settings
-                          action: set
-                          params:
-                            key: show_app_when_server_starts
-                  - component: text
-                    props:
-                      content: Downloads
-                      variant: title
-                  - component: text
-                    props:
-                      content: "Location: ~/Downloads"
-                      variant: body
+                      category: privacy
 
           plugins:
             component: layout/scroll-area
@@ -127,7 +100,7 @@ views:
                       variant: title
                   - component: plugin-list
 
-          privacy:
+          handlers:
             component: layout/scroll-area
             children:
               - component: layout/stack
@@ -135,59 +108,9 @@ views:
                   gap: 16
                   padding: 16
                 children:
-                  - component: text
+                  - component: settings-panel
                     props:
-                      content: Share with Agents
-                      variant: title
-                  - component: layout/stack
-                    props:
-                      gap: 8
-                    children:
-                      - component: toggle
-                        props:
-                          label: User profile
-                          checked: "{{activity.response.settings.share_profile_with_agents}}"
-                        on_change:
-                          tool: Settings
-                          action: set
-                          params:
-                            key: share_profile_with_agents
-                      - component: toggle
-                        props:
-                          label: Operating system
-                          checked: "{{activity.response.settings.share_system_os}}"
-                        on_change:
-                          tool: Settings
-                          action: set
-                          params:
-                            key: share_system_os
-                      - component: toggle
-                        props:
-                          label: Home directory path
-                          checked: "{{activity.response.settings.share_system_home}}"
-                        on_change:
-                          tool: Settings
-                          action: set
-                          params:
-                            key: share_system_home
-                      - component: toggle
-                        props:
-                          label: Timezone
-                          checked: "{{activity.response.settings.share_system_timezone}}"
-                        on_change:
-                          tool: Settings
-                          action: set
-                          params:
-                            key: share_system_timezone
-                      - component: toggle
-                        props:
-                          label: Current date
-                          checked: "{{activity.response.settings.share_system_date}}"
-                        on_change:
-                          tool: Settings
-                          action: set
-                          params:
-                            key: share_system_date
+                      category: handlers
 
           accounts:
             component: layout/scroll-area
@@ -213,11 +136,6 @@ views:
               align: center
               padding: 32
             children:
-              - component: text
-                props:
-                  content: "⚙️"
-                  variant: title
-                  align: center
               - component: text
                 props:
                   content: AgentOS
@@ -249,11 +167,6 @@ views:
           align: center
           padding: 32
         children:
-          - component: text
-            props:
-              content: "⚙️"
-              variant: title
-              align: center
           - component: text
             props:
               content: AgentOS
@@ -290,17 +203,8 @@ views:
                 props:
                   content: Plugin Sources
                   variant: title
-              - component: text
+              - component: settings-panel
                 props:
-                  content: "Directories scanned for plugins:"
-                  variant: body
-              - component: text
-                props:
-                  content: "• ~/.agentos/plugins"
-                  variant: body
-              - component: text
-                props:
-                  content: "• ~/.agentos/integrations/plugins"
-                  variant: body
+                  category: paths
 
 default_view: main
