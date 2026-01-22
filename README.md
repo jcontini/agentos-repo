@@ -27,154 +27,34 @@ This means:
 ### How It Works
 
 ```mermaid
-%%{init: {'theme': 'dark', 'themeVariables': { 'fontSize': '16px', 'fontFamily': 'ui-monospace, monospace', 'lineColor': '#6b7280', 'primaryTextColor': '#f3f4f6', 'edgeLabelBackground': '#1a1a2e' }}}%%
-flowchart TB
-    subgraph Container[" "]
-        direction TB
-        subgraph AgentGroup["AI Assistants"]
-            direction LR
-            Claude(["Claude"])
-            Cursor(["Cursor"])
-            ChatGPT(["ChatGPT"])
-        end
-        
-        subgraph Cloud["Cloud Relay"]
-            Relay(["⚡ Cloudflare Worker"])
-        end
-        
-        subgraph Core["AgentOS Core"]
-            direction TB
-            subgraph CoreTop[" "]
-                direction LR
-                MCP(["📡 MCP Server"])
-                UI(["🖥️ React UI"])
-            end
-            subgraph CoreBottom[" "]
-                direction LR
-                Plugins(["⚡ Plugins"])
-                Creds(["🔑 Credentials"])
-                Logs(["📋 Activity Logs"])
-            end
-        end
-        
-        subgraph External["Your Services"]
-            direction LR
-            Online(["☁️ Online APIs"])
-            Offline(["💻 Local Apps"])
-        end
-        
-        Claude -->|STDIO| MCP
-        Cursor -->|STDIO| MCP
-        ChatGPT -.->|HTTPS| Relay
-        Relay -.->|WebSocket| MCP
-        UI -->|invoke| Plugins
-        UI -->|invoke| Creds
-        MCP --> Plugins
-        MCP --> Creds
-        MCP --> Logs
-        Plugins --> Online
-        Plugins --> Offline
-    end
+%%{init: {'theme': 'dark', 'themeVariables': { 'fontSize': '16px', 'fontFamily': 'ui-monospace, monospace', 'lineColor': '#6b7280', 'primaryTextColor': '#f3f4f6' }}}%%
+flowchart LR
+    Entity(["📋 Entity<br/><small>task · event · contact · webpage</small>"])
+    Plugin(["⚡ Plugin<br/><small>todoist · linear · exa · imessage</small>"])
+    Cloud(["☁️ Cloud Services<br/><small>Todoist · Linear · Exa · Brave Search</small>"])
+    Local(["💻 Your Computer<br/><small>Calendar · Contacts · iMessage · SQLite</small>"])
+    App(["🖥️ App<br/><small>Browser · Tasks · Calendar</small>"])
+    Component(["🧩 Component<br/><small>list · tabs · url-bar</small>"])
+    Theme(["🎨 Theme<br/><small>Mac OS 9 · Windows 98</small>"])
     
-    style Container fill:#1a1a2e,stroke:#4a4a6a,stroke-width:2px,rx:10,ry:10
-    style AgentGroup fill:#2d1f1a,stroke:#f59e0b,stroke-width:2px,rx:8,ry:8,color:#fef3c7
-    style Cloud fill:#1a2d3d,stroke:#6b7280,stroke-width:2px,stroke-dasharray:5 5,rx:8,ry:8,color:#9ca3af
-    style Core fill:#3b1d6e,stroke:#a78bfa,stroke-width:2px,rx:8,ry:8,color:#f3f4f6
-    style CoreTop fill:transparent,stroke:transparent
-    style CoreBottom fill:transparent,stroke:transparent
-    style External fill:#0f3d3a,stroke:#14b8a6,stroke-width:2px,rx:8,ry:8,color:#ccfbf1
+    Entity -->|"implemented by"| Plugin
+    Plugin -->|"connects to"| Cloud
+    Plugin -->|"connects to"| Local
+    Entity -->|"displayed by"| App
+    App -->|"built with"| Component
+    Theme -->|"styles"| App
     
-    style Claude fill:#5a2a1a,stroke:#D97757,stroke-width:2px,color:#fcd5c5
-    style Cursor fill:#1e3a5f,stroke:#3B82F6,stroke-width:2px,color:#dbeafe
-    style ChatGPT fill:#0d3d2d,stroke:#10A37F,stroke-width:2px,stroke-dasharray:5 5,color:#d1fae5
+    style Entity fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#d1fae5
+    style Plugin fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#d1fae5
+    style Cloud fill:#134e4a,stroke:#14b8a6,stroke-width:2px,color:#ccfbf1
+    style Local fill:#134e4a,stroke:#14b8a6,stroke-width:2px,color:#ccfbf1
+    style App fill:#4c1d95,stroke:#a78bfa,stroke-width:2px,color:#f3f4f6
+    style Component fill:#374151,stroke:#9ca3af,stroke-width:2px,color:#f3f4f6
+    style Theme fill:#374151,stroke:#9ca3af,stroke-width:2px,color:#f3f4f6
     
-    style Relay fill:#1a2d3d,stroke:#6b7280,stroke-width:2px,stroke-dasharray:5 5,color:#9ca3af
-    
-    style MCP fill:#4c1d95,stroke:#a78bfa,stroke-width:2px,color:#f3f4f6
-    style UI fill:#4c1d95,stroke:#a78bfa,stroke-width:2px,color:#f3f4f6
-    style Plugins fill:#4c1d95,stroke:#a78bfa,stroke-width:2px,color:#f3f4f6
-    style Creds fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#d1fae5
-    style Logs fill:#374151,stroke:#9ca3af,stroke-width:2px,color:#f3f4f6
-    
-    style Online fill:#134e4a,stroke:#14b8a6,stroke-width:2px,color:#ccfbf1
-    style Offline fill:#134e4a,stroke:#14b8a6,stroke-width:2px,color:#ccfbf1
-    
-    linkStyle 0 stroke:#D97757,stroke-width:2px
-    linkStyle 1 stroke:#3B82F6,stroke-width:2px
-    linkStyle 2 stroke:#10A37F,stroke-width:2px,stroke-dasharray:5 5
-    linkStyle 3 stroke:#6b7280,stroke-width:2px,stroke-dasharray:5 5
-    linkStyle 4,5 stroke:#a78bfa,stroke-width:2px
-    linkStyle 6,7,8 stroke:#a78bfa,stroke-width:2px
-    linkStyle 9,10 stroke:#14b8a6,stroke-width:2px
+    linkStyle 0,1,2 stroke:#10b981,stroke-width:2px
+    linkStyle 3,4,5 stroke:#a78bfa,stroke-width:2px
 ```
-
-**Plugins are adapters.** They translate between your services' APIs and AgentOS's universal entities. You enable a plugin once, and any AI assistant can use it.
-
-**The UI shows you what's happening.** When your AI searches the web, you see results appear. When it creates a task, you see it in the task list. You're watching AI work—like looking over a colleague's shoulder. This transparency builds trust.
-
-### The Entity Graph
-
-AgentOS uses a universal entity model where everything connects:
-
-```mermaid
-graph TB
-    subgraph core["Core Entities"]
-        task[task]
-        project[project]
-        contact[contact]
-        event[event]
-        calendar[calendar]
-        message[message]
-        conversation[conversation]
-        note[note]
-        file[file]
-        label[label]
-        organization[organization]
-        webpage[webpage]
-    end
-    
-    subgraph task_rels["Task Relationships"]
-        task -->|belongs to| project
-        task -->|tagged with| label
-        task -->|assigned to| contact
-        task -->|created by| contact
-        task -->|parent| task
-        task -->|blocked by| task
-    end
-    
-    subgraph event_rels["Event Relationships"]
-        event -->|belongs to| calendar
-        event -->|attendees| contact
-        event -->|created by| contact
-    end
-    
-    subgraph message_rels["Message Relationships"]
-        message -->|part of| conversation
-        message -->|sent by| contact
-        conversation -->|participants| contact
-    end
-    
-    subgraph other_rels["Other Relationships"]
-        contact -->|works for| organization
-        note -->|about| task
-        note -->|about| project
-        note -->|about| contact
-        note -->|about| event
-        file -->|in folder| file
-        file -->|owned by| contact
-        project -->|parent| project
-    end
-    
-    classDef entity fill:#4a90e2,stroke:#2c5aa0,stroke-width:2px,color:#fff
-    classDef relationship stroke:#7b68ee,stroke-width:1.5px
-    
-    class task,project,contact,event,calendar,message,conversation,note,file,label,organization,webpage entity
-```
-
-This graph structure means:
-- **Cross-service queries work** — "Show tasks assigned to Sarah from all sources"
-- **Relationships are bidirectional** — From a task, see its project; from a project, see all tasks
-- **Migration is easy** — Same graph structure, different backends
 
 ### What You Can Do
 
