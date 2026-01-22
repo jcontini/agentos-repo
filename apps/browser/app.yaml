@@ -9,6 +9,7 @@ description: Watch AI search the web and read pages
 # Entity types this app displays
 entities:
   - webpage
+  - video
 
 # Menu bar configuration
 menus:
@@ -72,6 +73,42 @@ views:
           source: "{{activity.connector}}"
           duration: "{{activity.duration_ms}}"
 
+  # Video view - shows video.get activities (YouTube, etc.)
+  video:
+    entity: video
+    operation: get
+    title: "{{activity.response.title}}"
+    toolbar:
+      - component: url-bar
+        props:
+          mode: url
+          value: "{{activity.request.params.url}}"
+          source: "{{activity.connector}}"
+          sourceIcon: "/plugins/{{activity.connector}}/icon.png"
+    
+    layout:
+      - component: layout/scroll-area
+        children:
+          - component: layout/stack
+            props:
+              direction: vertical
+              gap: "16px"
+            children:
+              - component: media-header
+                props:
+                  thumbnail: "{{activity.response.thumbnail}}"
+                  title: "{{activity.response.title}}"
+                  creator: "{{activity.response.creator_name}}"
+                  creatorUrl: "{{activity.response.creator_url}}"
+                  duration: "{{activity.response.duration_ms}}"
+              - component: text
+                props:
+                  content: "{{activity.response.description}}"
+                  variant: body
+        footer:
+          source: "{{activity.connector}}"
+          duration: "{{activity.duration_ms}}"
+
   # About view - shows app info
   about:
     title: About Browser
@@ -103,7 +140,7 @@ views:
               variant: caption
               align: center
 
-  # History view - shows all webpage activities
+  # History view - shows all browser activities (webpage + video)
   history:
     title: History
     layout:
@@ -112,7 +149,7 @@ views:
           - component: list
             data:
               source: activities
-              entity: webpage
+              entity: [webpage, video]
               limit: 100
             item_component: items/history-item
             item_props:

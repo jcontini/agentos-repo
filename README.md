@@ -77,19 +77,35 @@ flowchart LR
 This repository contains everything the AgentOS community builds:
 
 ```
-plugins/           Service integrations (Linear, Todoist, Exa, etc.)
+entities/          Universal schemas (task, video, book, conversation, etc.)
+plugins/           Service adapters (Linear → task, YouTube → video, etc.)
 components/        Reusable UI building blocks
-apps/              Capability renderers (Browser, Tasks, etc.)
+apps/              Entity renderers (Browser shows video/webpage, Tasks shows task)
 agents/            Setup instructions for AI clients (Cursor, Claude, etc.)
 ```
 
+### Entities
+
+Universal schemas that define what things ARE, regardless of which service provides them.
+
+```
+entities/
+  media/            # video, book, audio, image
+  task.yaml         # Tasks from Todoist, Linear, etc.
+  webpage.yaml      # Web content from any URL
+  conversation.yaml # Chats from iMessage, WhatsApp, etc.
+  ...
+```
+
+Entities live in folders for conceptual grouping (e.g., `media/` contains video, book, audio).
+
 ### Plugins
 
-Connect AgentOS to external services. Each plugin is YAML config + docs—no code required.
+Service adapters that transform API responses into universal entities. Plugins also declare **URL handlers** — patterns that route URLs to the right plugin.
 
 ```
 plugins/
-  linear/
+  youtube/
     readme.md       # YAML config + markdown docs
     icon.png        # Square icon
     tests/          # Integration tests
@@ -98,15 +114,17 @@ plugins/
   ...
 ```
 
-| Category | Plugins |
-|----------|---------|
-| Tasks | todoist, linear |
-| Messages | imessage, whatsapp |
-| Databases | postgres, sqlite, mysql |
-| Calendar | apple-calendar |
-| Contacts | apple-contacts |
-| Web | exa, firecrawl, reddit |
-| Books | hardcover, goodreads |
+**URL Handlers:** When AI calls `url.read("youtube.com/...")`, the YouTube plugin handles it and returns a `video` entity. This happens automatically via URL pattern matching.
+
+| Category | Plugins | Entity |
+|----------|---------|--------|
+| Tasks | todoist, linear | task |
+| Messages | imessage, whatsapp | message, conversation |
+| Databases | postgres, sqlite, mysql | (custom) |
+| Calendar | apple-calendar | event |
+| Contacts | apple-contacts | contact |
+| Web | exa, firecrawl | webpage |
+| Media | youtube, goodreads, hardcover | video, book |
 
 ### Components
 
@@ -121,13 +139,16 @@ components/
 
 ### Apps
 
-Render capabilities with components. Define how data is displayed.
+Render entities with components. Each app defines views for the entity types it can display.
 
 ```
 apps/
-  browser/          # Renders web_search, web_read
+  browser/          # Renders webpage, video, book, document
+  settings/         # System configuration
   ...
 ```
+
+**Entity routing is implicit.** The system scans app views to determine which app handles which entity. If multiple apps can render an entity, the user picks the default in Settings.
 
 ### Agents
 

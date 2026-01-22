@@ -1,0 +1,100 @@
+# Video Entity
+# Video content from YouTube, Vimeo, or local files
+
+id: video
+name: Video
+description: Video content with metadata and optional transcript
+
+references:
+  schema_org: https://schema.org/VideoObject
+  wikidata: Q34508  # video
+
+properties:
+  # Identity
+  title:
+    type: string
+    required: true
+    description: Video title
+
+  description:
+    type: string
+    description: Video description
+
+  # Creator
+  creator:
+    type: object
+    description: Who made this video
+    properties:
+      name:
+        type: string
+        required: true
+      url:
+        type: string
+        format: url
+      avatar:
+        type: string
+        format: url
+
+  # Content
+  duration_ms:
+    type: integer
+    description: Duration in milliseconds
+
+  thumbnail:
+    type: string
+    format: url
+    description: Thumbnail image URL
+
+  transcript:
+    type: string
+    description: Full transcript text (the key artifact for AI)
+
+  chapters:
+    type: array
+    description: Chapter markers with timestamps
+    items:
+      title: string
+      start_ms: integer
+
+  # Technical (optional)
+  resolution:
+    type: string
+    description: Video resolution (e.g., 1080p, 4K)
+
+  codec:
+    type: string
+    description: Video codec (e.g., h264, vp9)
+
+  # External sources (same video on different services)
+  sources:
+    type: array
+    description: Where this video exists
+    items:
+      provider:
+        type: string
+        description: Service name (youtube, vimeo, local)
+      id:
+        type: string
+        description: Provider-specific ID
+      url:
+        type: string
+        format: url
+        description: URL on that service
+
+  # Metadata
+  published_at:
+    type: datetime
+    description: When the video was published
+
+  fetched_at:
+    type: datetime
+    description: When we retrieved this data
+
+operations: [get, transcribe]
+
+display:
+  primary: title
+  secondary: creator.name
+  description: description
+  image: thumbnail
+  icon: play
