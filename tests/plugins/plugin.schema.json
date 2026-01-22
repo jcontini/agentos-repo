@@ -90,9 +90,83 @@
     "instructions": {
       "type": "string",
       "description": "Free-form instructions for AI about how to use this plugin"
+    },
+    "requires": {
+      "type": "array",
+      "description": "System dependencies that must be installed",
+      "items": {
+        "$ref": "#/definitions/dependency"
+      }
+    },
+    "handles": {
+      "type": "object",
+      "description": "URL patterns this plugin handles for routing",
+      "properties": {
+        "urls": {
+          "type": "array",
+          "description": "URL patterns (e.g., 'youtube.com/*', 'github.com/*/issues/*')",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sources": {
+      "$ref": "#/definitions/pluginSources"
     }
   },
   "definitions": {
+    "dependency": {
+      "type": "object",
+      "description": "System dependency requirement",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Dependency name (e.g., 'yt-dlp', 'ffmpeg')"
+        },
+        "install": {
+          "type": "object",
+          "description": "Platform-specific install commands",
+          "properties": {
+            "macos": { "type": "string", "description": "macOS install command" },
+            "linux": { "type": "string", "description": "Linux install command" },
+            "windows": { "type": "string", "description": "Windows install command" }
+          }
+        }
+      }
+    },
+    "pluginSources": {
+      "type": "object",
+      "description": "External sources for Content Security Policy",
+      "properties": {
+        "images": {
+          "type": "array",
+          "description": "Image sources (thumbnails, avatars) → CSP img-src",
+          "items": { "type": "string" }
+        },
+        "api": {
+          "type": "array",
+          "description": "API endpoints → CSP connect-src",
+          "items": { "type": "string" }
+        },
+        "scripts": {
+          "type": "array",
+          "description": "External scripts → CSP script-src (use sparingly)",
+          "items": { "type": "string" }
+        },
+        "styles": {
+          "type": "array",
+          "description": "External stylesheets → CSP style-src",
+          "items": { "type": "string" }
+        },
+        "fonts": {
+          "type": "array",
+          "description": "Web fonts → CSP font-src",
+          "items": { "type": "string" }
+        }
+      }
+    },
     "adapter": {
       "type": "object",
       "description": "Entity adapter that transforms API data into universal entity format",

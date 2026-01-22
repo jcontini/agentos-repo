@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { aos } from '../fixtures';
+import { aos } from '../utils/fixtures';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';

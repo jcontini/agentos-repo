@@ -86,12 +86,93 @@ plugins/{name}/
 
 ```yaml
 # readme.md YAML front matter
+requires:     # System dependencies (optional)
+handles:      # URL patterns this plugin routes (optional)
+sources:      # External resources for CSP (optional)
 adapters:     # How API data maps to entity schemas
 operations:   # Entity CRUD (returns: entity, entity[], or void)
 utilities:    # Helpers with custom return shapes (optional)
 ```
 
 **Examples:** `plugins/todoist/` (REST API), `plugins/apple-calendar/` (Swift/native)
+
+### Dependencies
+
+Plugins can declare system dependencies that must be installed:
+
+```yaml
+requires:
+  - name: yt-dlp
+    install:
+      macos: brew install yt-dlp
+      linux: sudo apt install -y yt-dlp
+      windows: choco install yt-dlp -y
+```
+
+| Field | Description |
+|-------|-------------|
+| `name` | Dependency name (shown to user) |
+| `install.macos` | macOS install command |
+| `install.linux` | Linux install command |
+| `install.windows` | Windows install command |
+
+The system checks if dependencies are available and shows install instructions if missing.
+
+### URL Handlers
+
+Plugins can register for URL patterns. When AI calls `url.read(url)`, the system routes to the appropriate plugin:
+
+```yaml
+handles:
+  urls:
+    - "youtube.com/*"
+    - "youtu.be/*"
+    - "music.youtube.com/*"
+```
+
+**Pattern syntax:**
+- `*` matches any characters within a path segment
+- Patterns match against the URL's host + path (without protocol)
+- First matching plugin wins (order defined in Settings)
+
+**Example flow:**
+1. AI calls `url.read("https://youtube.com/watch?v=abc123")`
+2. System matches `youtube.com/*` → routes to YouTube plugin
+3. YouTube plugin returns a `video` entity
+4. Browser displays video view (entity routing)
+
+### External Sources
+
+Plugins can declare external resources they need. The server uses these to build Content Security Policy (CSP) headers dynamically:
+
+```yaml
+sources:
+  images:
+    - "https://i.ytimg.com/*"      # Video thumbnails
+    - "https://yt3.ggpht.com/*"    # Channel avatars
+  api:
+    - "https://api.example.com/*"  # API endpoints
+  scripts:
+    - "https://cdn.example.com/*"  # External scripts (use sparingly)
+  styles:
+    - "https://fonts.googleapis.com/*"
+  fonts:
+    - "https://fonts.gstatic.com/*"
+```
+
+| Category | CSP Directive | Use for |
+|----------|---------------|---------|
+| `images` | `img-src` | Thumbnails, avatars, covers |
+| `api` | `connect-src` | REST/GraphQL endpoints |
+| `scripts` | `script-src` | External JavaScript |
+| `styles` | `style-src` | External CSS |
+| `fonts` | `font-src` | Web fonts |
+
+**How it works:**
+- Server collects sources from all enabled plugins at startup
+- CSP header is built dynamically based on enabled plugins
+- Disabling a plugin removes its sources from the allowlist
+- Resources from undeclared sources are blocked by the browser
 
 ### Adapters
 

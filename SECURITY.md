@@ -38,6 +38,49 @@ All plugins are validated before commit:
 - Security checks block credential exposure patterns
 - Test coverage ensures operations work as expected
 
+### Network Security (Content Security Policy)
+
+AgentOS uses Content Security Policy (CSP) to control which external resources plugins can load. This prevents malicious content injection and limits data exfiltration.
+
+**How it works:**
+
+1. Plugins declare external sources they need in their config:
+   ```yaml
+   sources:
+     images:
+       - "https://i.ytimg.com/*"    # YouTube thumbnails
+     api:
+       - "https://api.service.com/*"
+   ```
+
+2. Server collects sources from all **enabled** plugins at startup
+3. CSP header is built dynamically from collected sources
+4. Browser blocks any resources not in the allowlist
+
+**Source categories:**
+
+| Category | CSP Directive | Purpose |
+|----------|---------------|---------|
+| `images` | `img-src` | Thumbnails, avatars, media |
+| `api` | `connect-src` | API calls, WebSocket |
+| `scripts` | `script-src` | External JavaScript |
+| `styles` | `style-src` | External CSS |
+| `fonts` | `font-src` | Web fonts |
+
+**Security benefits:**
+
+- **Least privilege** — plugins only get access to sources they declare
+- **Dynamic allowlist** — disabling a plugin removes its sources
+- **Transparent** — sources are visible in plugin YAML
+- **Defense in depth** — even if plugin code is compromised, it can't load arbitrary external resources
+
+**Best practices for plugin authors:**
+
+- Declare only the sources you actually need
+- Use specific domains, not wildcards when possible
+- Prefer `images` and `api` over `scripts` (external scripts are higher risk)
+- Document why each source is needed (comments in YAML)
+
 ### Best Practices
 
 When contributing plugins:
@@ -47,6 +90,7 @@ When contributing plugins:
 3. **Handle errors gracefully** — don't expose sensitive info in error messages
 4. **Test securely** — use test credentials, never production keys
 5. **Review before commit** — pre-commit hooks catch common issues
+6. **Declare external sources** — use `sources:` for any external resources (see Network Security above)
 
 ## Scope
 
