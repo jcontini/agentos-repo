@@ -62,7 +62,7 @@ operations:
           title: ".title"
           snippet: ".description"
 
-  webpage.read:
+  webpage.fetch:
     description: Scrape a URL with browser rendering (handles JS-heavy sites)
     returns: webpage
     params:

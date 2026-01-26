@@ -30,7 +30,7 @@ instructions: |
 adapters:
   webpage:
     terminology: Result
-    # Default mapping for read operations (has full content)
+    # Default mapping for fetch operations (has full content)
     mapping:
       url: .url
       title: .title
@@ -64,11 +64,11 @@ operations:
           title: .title
           published_at: .publishedDate
 
-  webpage.read:
+  webpage.fetch:
     description: Extract content from a URL
     returns: webpage
     params:
-      url: { type: string, required: true, description: "URL to read" }
+      url: { type: string, required: true, description: "URL to fetch" }
     rest:
       method: POST
       url: https://api.exa.ai/contents
@@ -106,7 +106,7 @@ Semantic web search and content extraction. Neural search finds content by meani
 
 ## Known Limitations
 
-**`read` action**: May fail for URLs that Exa can't crawl (e.g., `example.com`, pages behind auth, rate-limited sites). The API returns empty results with error info in `statuses`, but the current plugin doesn't surface this gracefully. Use `firecrawl.read` as fallback for problematic URLs.
+**`fetch` action**: May fail for URLs that Exa can't crawl (e.g., `example.com`, pages behind auth, rate-limited sites). The API returns empty results with error info in `statuses`, but the current plugin doesn't surface this gracefully. Use `firecrawl.fetch` as fallback for problematic URLs.
 
 The Exa API returns:
 ```json

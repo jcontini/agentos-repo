@@ -4,7 +4,8 @@ name: Reddit
 description: Read public Reddit communities, posts, and comments
 icon: icon.png
 color: "#FF4500"
-tags: [web, social, reddit, communities]
+tags: [social, reddit, communities]
+display: browser
 
 website: https://reddit.com
 privacy_url: https://www.reddit.com/policies/privacy-policy
@@ -15,99 +16,90 @@ instructions: |
   - Uses public JSON endpoints (no auth needed)
   - Rate limited to ~10 requests/minute
   - Works for any public subreddit, post, or user profile
-  - Add .json to any Reddit URL to get JSON data
 
-# Action implementations (merged from mapping.yaml)
-actions:
-  search:
-    operation: read
-    label: "Search Reddit"
-    description: "Search posts across all of Reddit or within a specific subreddit"
-    command:
-      binary: curl
-      args:
-        - "-s"
-        - "-A"
-        - "AgentOS/1.0 (github.com/joehewett/agentos)"
-        - "https://www.reddit.com/search.json?q={{params.query}}&limit={{params.limit | default:10}}&sort={{params.sort | default:relevance}}"
-      timeout: 30
-    response:
-      root: "data.children"
-      mapping:
-        id: "[].data.id"
-        title: "[].data.title"
-        url: "[].data.url"
-        subreddit: "[].data.subreddit"
-        author: "[].data.author"
-        score: "[].data.score"
-        num_comments: "[].data.num_comments"
-        created_utc: "[].data.created_utc"
-        selftext: "[].data.selftext"
-        permalink: "[].data.permalink"
-        connector: "'reddit'"
+# ═══════════════════════════════════════════════════════════════════════════════
+# ADAPTERS
+# ═══════════════════════════════════════════════════════════════════════════════
 
-  read:
-    operation: read
-    label: "Read Reddit URL"
-    description: "Get data from any Reddit URL (subreddit, post, user profile)"
-    command:
-      binary: curl
-      args:
-        - "-s"
-        - "-A"
-        - "AgentOS/1.0 (github.com/joehewett/agentos)"
-        - "{{params.url}}.json"
-      timeout: 30
-    response:
-      mapping:
-        url: "{{params.url}}"
-        connector: "'reddit'"
-
-  subreddit:
-    operation: read
-    label: "Get subreddit posts"
-    description: "Get recent posts from a subreddit"
-    command:
-      binary: curl
-      args:
-        - "-s"
-        - "-A"
-        - "AgentOS/1.0 (github.com/joehewett/agentos)"
-        - "https://www.reddit.com/r/{{params.subreddit}}/{{params.sort | default:hot}}.json?limit={{params.limit | default:25}}"
-      timeout: 30
-    response:
-      root: "data.children"
-      mapping:
-        id: "[].data.id"
-        title: "[].data.title"
-        url: "[].data.url"
-        author: "[].data.author"
-        score: "[].data.score"
-        num_comments: "[].data.num_comments"
-        created_utc: "[].data.created_utc"
-        selftext: "[].data.selftext"
-        permalink: "[].data.permalink"
-        is_self: "[].data.is_self"
-        thumbnail: "[].data.thumbnail"
-        connector: "'reddit'"
-
+adapters:
   post:
-    operation: read
-    label: "Get post with comments"
-    description: "Get a Reddit post and its comments by post ID"
-    command:
-      binary: curl
-      args:
-        - "-s"
-        - "-A"
-        - "AgentOS/1.0 (github.com/joehewett/agentos)"
-        - "https://www.reddit.com/comments/{{params.post_id}}.json?limit={{params.comment_limit | default:100}}"
-      timeout: 30
+    terminology: Post
+    mapping:
+      id: .data.id
+      title: .data.title
+      content: .data.selftext
+      url: ".data.permalink | prepend: 'https://reddit.com'"
+      author: .data.author
+      subreddit: .data.subreddit
+      score: .data.score
+      comment_count: .data.num_comments
+      published_at: ".data.created_utc | from_unix"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# OPERATIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+operations:
+  post.search:
+    description: Search posts across Reddit
+    returns: post[]
+    params:
+      query: { type: string, required: true, description: "Search query" }
+      limit: { type: integer, default: 10, description: "Number of results (max 100)" }
+      sort: { type: string, default: "relevance", description: "Sort by: relevance, hot, top, new, comments" }
+    rest:
+      method: GET
+      url: https://www.reddit.com/search.json
+      headers:
+        User-Agent: "AgentOS/1.0"
+      query:
+        q: "{{params.query}}"
+        limit: "{{params.limit | default:10}}"
+        sort: "{{params.sort | default:relevance}}"
+      response:
+        root: "/data/children"
+
+  post.list:
+    description: List posts from a subreddit
+    returns: post[]
+    params:
+      subreddit: { type: string, required: true, description: "Subreddit name (without r/)" }
+      sort: { type: string, default: "hot", description: "Sort by: hot, new, top, rising" }
+      limit: { type: integer, default: 25, description: "Number of posts (max 100)" }
+    rest:
+      method: GET
+      url: "https://www.reddit.com/r/{{params.subreddit}}/{{params.sort | default:hot}}.json"
+      headers:
+        User-Agent: "AgentOS/1.0"
+      query:
+        limit: "{{params.limit | default:25}}"
+      response:
+        root: "/data/children"
+
+  post.get:
+    description: Get a Reddit post with comments
+    returns: post
+    params:
+      id: { type: string, required: true, description: "Post ID (e.g., 'abc123')" }
+      comment_limit: { type: integer, default: 100, description: "Max comments to fetch" }
+    rest:
+      method: GET
+      url: "https://www.reddit.com/comments/{{params.id}}.json"
+      headers:
+        User-Agent: "AgentOS/1.0"
+      query:
+        limit: "{{params.comment_limit | default:100}}"
+      response:
+        root: "/0/data/children/0"
 ---
 
 # Reddit
 
 Access public Reddit data using Reddit's built-in JSON endpoints.
+
+## No Setup Required
+
+Unlike the official Reddit API (which now requires pre-approval), this plugin uses Reddit's public JSON endpoints that work immediately without any configuration.
 
 ## How it works
 
@@ -119,33 +111,40 @@ Reddit exposes a public JSON API by simply appending `.json` to any URL:
 
 No authentication required, just a custom User-Agent header to avoid rate limiting.
 
-## No Setup Required
-
-Unlike the official Reddit API (which now requires pre-approval), this connector uses Reddit's public JSON endpoints that work immediately without any configuration.
-
 ## Rate Limits
 
 - ~10 requests per minute without OAuth
 - Sufficient for browsing and casual use
 
-## Actions
+## Operations
 
-| Action | Description |
-|--------|-------------|
-| `search` | Search posts across Reddit |
-| `read` | Read any Reddit URL as JSON |
-| `subreddit` | Get posts from a subreddit |
-| `post` | Get a post with its comments |
+| Operation | Description |
+|-----------|-------------|
+| `post.search` | Search posts across all of Reddit |
+| `post.list` | List posts from a specific subreddit |
+| `post.get` | Get a single post with comments |
 
 ## Examples
 
-```yaml
-# Get hot posts from r/programming
-Web(action: "subreddit", connector: "reddit", params: {subreddit: "programming"})
-
+```bash
 # Search for posts about TypeScript
-Web(action: "search", connector: "reddit", params: {query: "typescript tips"})
+GET /api/posts/search?query=typescript+tips
 
-# Get new posts sorted by new
-Web(action: "subreddit", connector: "reddit", params: {subreddit: "webdev", sort: "new"})
+# List hot posts from r/programming  
+GET /api/posts?subreddit=programming
+
+# Get a specific post
+GET /api/posts/abc123
+```
+
+```bash
+# Using plugin endpoints directly
+POST /api/plugins/reddit/post.search
+{"query": "rust programming", "limit": 10}
+
+POST /api/plugins/reddit/post.list
+{"subreddit": "programming", "sort": "hot"}
+
+POST /api/plugins/reddit/post.get
+{"id": "1abc234"}
 ```
