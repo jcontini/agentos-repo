@@ -14,13 +14,6 @@ requires:
       linux: sudo apt install -y yt-dlp
       windows: choco install yt-dlp -y
 
-# URL patterns this plugin handles
-handles:
-  urls:
-    - "youtube.com/*"
-    - "youtu.be/*"
-    - "music.youtube.com/*"
-
 # External sources this plugin needs (for CSP)
 sources:
   images:
@@ -46,6 +39,10 @@ operations:
   video.get:
     description: Get video metadata (title, creator, thumbnail, duration)
     returns: video
+    handles_urls:
+      - "youtube.com/*"
+      - "youtu.be/*"
+      - "music.youtube.com/*"
     params:
       url:
         type: string
