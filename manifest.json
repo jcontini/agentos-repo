@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated_at": "2026-01-27T02:47:22.028Z",
+  "updated_at": "2026-01-27T14:26:10.994Z",
   "plugins": [
     {
       "id": "apple-calendar",
@@ -201,14 +201,6 @@
       "author": "agentos"
     },
     {
-      "id": "settings",
-      "name": "Settings",
-      "description": "Configure AgentOS preferences, plugins, and credentials",
-      "icon": "apps/settings/icon.svg",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
       "id": "terminal",
       "name": "Terminal",
       "description": "View all AI activity as terminal output",
@@ -230,22 +222,8 @@
   ],
   "components": [
     {
-      "id": "about-panel",
-      "name": "about-panel",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
       "id": "activity-footer",
       "name": "activity-footer",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
-      "id": "credential-list",
-      "name": "credential-list",
       "description": "",
       "version": "1.0.0",
       "author": "agentos"
@@ -300,36 +278,8 @@
       "author": "agentos"
     },
     {
-      "id": "plugin-list",
-      "name": "plugin-list",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
       "id": "plugin-preferences",
       "name": "plugin-preferences",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
-      "id": "profile-editor",
-      "name": "profile-editor",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
-      "id": "settings-panel",
-      "name": "settings-panel",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
-      "id": "tabs",
-      "name": "tabs",
       "description": "",
       "version": "1.0.0",
       "author": "agentos"
@@ -344,13 +294,6 @@
     {
       "id": "terminal-output",
       "name": "terminal-output",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
-      "id": "text",
-      "name": "text",
       "description": "",
       "version": "1.0.0",
       "author": "agentos"
@@ -372,20 +315,6 @@
     {
       "id": "url-bar",
       "name": "url-bar",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
-      "id": "wallpaper-picker",
-      "name": "wallpaper-picker",
-      "description": "",
-      "version": "1.0.0",
-      "author": "agentos"
-    },
-    {
-      "id": "web-defaults",
-      "name": "web-defaults",
       "description": "",
       "version": "1.0.0",
       "author": "agentos"
