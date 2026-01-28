@@ -30,6 +30,8 @@ export interface PostHeaderProps {
   commentCount?: number;
   /** Publication timestamp */
   publishedAt?: string;
+  /** Plugin that provided this data (for platform-specific display) */
+  plugin?: string;
 }
 
 /**
@@ -62,6 +64,21 @@ function formatNumber(num: number): string {
   return String(num);
 }
 
+/**
+ * Get platform-specific community display name
+ * e.g., "r/programming" for Reddit
+ */
+function formatCommunity(name?: string, plugin?: string): string | undefined {
+  if (!name) return undefined;
+  
+  switch (plugin) {
+    case 'reddit':
+      return `r/${name}`;
+    default:
+      return name;
+  }
+}
+
 export function PostHeader({
   title,
   author,
@@ -71,13 +88,44 @@ export function PostHeader({
   score,
   commentCount,
   publishedAt,
+  plugin,
 }: PostHeaderProps) {
+  const displayCommunity = formatCommunity(community, plugin);
+  
   return (
     <div
       className="stack"
       data-direction="vertical"
       style={{ gap: '8px', padding: '12px 16px' }}
     >
+      {/* Community breadcrumb - shown above title */}
+      {displayCommunity && (
+        communityUrl ? (
+          <a
+            className="text"
+            data-variant="caption"
+            href={communityUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              textDecoration: 'none',
+              fontWeight: 600,
+              fontSize: '0.9rem'
+            }}
+          >
+            {displayCommunity}
+          </a>
+        ) : (
+          <span 
+            className="text" 
+            data-variant="caption"
+            style={{ fontWeight: 600, fontSize: '0.9rem' }}
+          >
+            {displayCommunity}
+          </span>
+        )
+      )}
+      
       {/* Title */}
       {title && (
         <span
@@ -89,35 +137,12 @@ export function PostHeader({
         </span>
       )}
       
-      {/* Meta line: community • author • time */}
+      {/* Meta line: author • time */}
       <div
         className="stack"
         data-direction="horizontal"
         style={{ gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}
       >
-        {/* Community */}
-        {community && (
-          communityUrl ? (
-            <a
-              className="text"
-              data-variant="caption"
-              href={communityUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: 'none' }}
-            >
-              {community}
-            </a>
-          ) : (
-            <span className="text" data-variant="caption">{community}</span>
-          )
-        )}
-        
-        {/* Separator */}
-        {community && author && (
-          <span className="text" data-variant="caption">•</span>
-        )}
-        
         {/* Author */}
         {author && (
           <>
@@ -140,7 +165,7 @@ export function PostHeader({
         )}
         
         {/* Separator */}
-        {(community || author) && publishedAt && (
+        {author && publishedAt && (
           <span className="text" data-variant="caption">•</span>
         )}
         

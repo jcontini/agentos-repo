@@ -23,6 +23,8 @@ export interface GroupHeaderProps {
   privacy?: string;
   /** Group URL */
   url?: string;
+  /** Plugin that provided this data (for platform-specific display) */
+  plugin?: string;
 }
 
 /**
@@ -38,6 +40,23 @@ function formatPrivacy(privacy?: string): string {
       return 'Secret';
     default:
       return 'Public';
+  }
+}
+
+/**
+ * Get platform-specific display name
+ * e.g., "r/programming" for Reddit, "Group Name" for Facebook
+ */
+function getPlatformDisplayName(name?: string, plugin?: string): string | undefined {
+  if (!name) return undefined;
+  
+  switch (plugin) {
+    case 'reddit':
+      return `r/${name}`;
+    case 'facebook':
+      return name;
+    default:
+      return name;
   }
 }
 
@@ -93,9 +112,11 @@ export function GroupHeader({
   memberCountNumeric,
   privacy,
   url,
+  plugin,
 }: GroupHeaderProps) {
   const [imageError, setImageError] = useState(false);
   
+  const displayName = getPlatformDisplayName(name, plugin);
   const displayMemberCount = formatMemberCount(memberCountNumeric || memberCount);
   const privacyLabel = formatPrivacy(privacy);
   
@@ -144,8 +165,8 @@ export function GroupHeader({
           data-direction="vertical"
           style={{ gap: '8px', flex: 1, minWidth: 0 }}
         >
-          {/* Name as heading */}
-          {name && (
+          {/* Name as heading (platform-aware) */}
+          {displayName && (
             <span
               className="text"
               data-variant="title"
@@ -153,7 +174,7 @@ export function GroupHeader({
               data-weight="bold"
               style={{ fontSize: '1.5rem', textDecoration: 'none', color: 'inherit' }}
             >
-              {name}
+              {displayName}
             </span>
           )}
           

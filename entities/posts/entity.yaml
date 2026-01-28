@@ -126,20 +126,29 @@ views:
   list:
     title: "Posts"
     layout:
-      - component: list
-        data:
-          source: activity
-        item_component: post-item
-        item_props:
-          id: "{{id}}"
-          title: "{{title}}"
-          content: "{{content}}"
-          author: "{{author.name}}"
-          community: "{{community.name}}"
-          score: "{{engagement.score}}"
-          commentCount: "{{engagement.comment_count}}"
-          url: "{{url}}"
-          publishedAt: "{{published_at}}"
+      - component: layout/stack
+        props:
+          direction: vertical
+          gap: "0"
+        children:
+          - component: community-header
+            props:
+              name: "{{activity.request.subreddit}}"
+              plugin: "{{activity.request.plugin}}"
+          - component: list
+            data:
+              source: activity
+            item_component: post-item
+            item_props:
+              id: "{{id}}"
+              title: "{{title}}"
+              content: "{{content}}"
+              author: "{{author.name}}"
+              community: "{{community.name}}"
+              score: "{{engagement.score}}"
+              commentCount: "{{engagement.comment_count}}"
+              url: "{{url}}"
+              publishedAt: "{{published_at}}"
 
   search:
     title: "Search Results"
@@ -178,6 +187,7 @@ views:
               score: "{{activity.response.engagement.score}}"
               commentCount: "{{activity.response.engagement.comment_count}}"
               publishedAt: "{{activity.response.published_at}}"
+              plugin: "{{activity.response.plugin}}"
           - component: text
             props:
               content: "{{activity.response.content}}"
