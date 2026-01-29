@@ -109,7 +109,9 @@ views:
       - component: layout/stack
         props:
           direction: vertical
-          gap: "16px"
+          gap: "12px"
+          style:
+            padding: "12px"
         children:
           - component: video-header
             props:
@@ -129,7 +131,9 @@ views:
       - component: layout/stack
         props:
           direction: vertical
-          gap: "16px"
+          gap: "12px"
+          style:
+            padding: "12px"
         children:
           - component: video-header
             props:
@@ -142,7 +146,7 @@ views:
           - component: text
             props:
               content: "Transcript"
-              variant: caption
+              variant: section-header
           - component: markdown
             props:
               content: "{{activity.response.transcript}}"

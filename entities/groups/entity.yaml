@@ -62,6 +62,13 @@ properties:
     type: datetime
     description: Last activity timestamp
 
+  # Nested posts (populated by get operation when available)
+  posts:
+    type: array
+    description: Top posts in this group (for group.get views)
+    items:
+      type: post
+
 operations: [list, get, search]
 
 display:
@@ -108,22 +115,32 @@ views:
           privacy: "{{privacy}}"
           url: "{{url}}"
 
-  # Single group view
+  # Single group view with posts
   get:
     title: "{{activity.response.name}}"
     layout:
-      - component: layout/stack
+      - component: group-header
         props:
-          direction: vertical
-          gap: "16px"
-        children:
-          - component: group-header
-            props:
-              name: "{{activity.response.name}}"
-              description: "{{activity.response.description}}"
-              icon: "{{activity.response.icon}}"
-              memberCount: "{{activity.response.member_count}}"
-              memberCountNumeric: "{{activity.response.member_count_numeric}}"
-              privacy: "{{activity.response.privacy}}"
-              url: "{{activity.response.url}}"
-              plugin: "{{activity.response.plugin}}"
+          name: "{{activity.response.name}}"
+          description: "{{activity.response.description}}"
+          icon: "{{activity.response.icon}}"
+          memberCount: "{{activity.response.member_count}}"
+          memberCountNumeric: "{{activity.response.member_count_numeric}}"
+          privacy: "{{activity.response.privacy}}"
+          url: "{{activity.response.url}}"
+          plugin: "{{activity.response.plugin}}"
+      - component: list
+        data:
+          source: activity
+          path: posts
+        item_component: post/post-item
+        item_props:
+          id: "{{id}}"
+          title: "{{title}}"
+          content: "{{content}}"
+          author: "{{author.name}}"
+          community: "{{community.name}}"
+          score: "{{engagement.score}}"
+          commentCount: "{{engagement.comment_count}}"
+          url: "{{url}}"
+          publishedAt: "{{published_at}}"

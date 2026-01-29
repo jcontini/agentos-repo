@@ -49,14 +49,15 @@ adapters:
   group:
     terminology: Subreddit
     mapping:
-      id: .data.name
-      name: .data.display_name
-      description: .data.public_description
-      url: ".data.display_name | prepend: 'https://reddit.com/r/'"
-      icon: .data.community_icon
-      member_count: .data.subscribers
-      member_count_numeric: .data.subscribers
+      id: .name
+      name: .display_name
+      description: .public_description
+      url: ".display_name | prepend: 'https://reddit.com/r/'"
+      icon: .community_icon
+      member_count: .subscribers
+      member_count_numeric: .subscribers
       privacy: "OPEN"
+      posts: .posts
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # OPERATIONS
@@ -116,26 +117,44 @@ operations:
         root: "/0/data/children/0"
 
   group.get:
-    description: Get metadata for a subreddit (community/group)
+    description: Get a subreddit with its top posts
     returns: group
     params:
       subreddit: { type: string, required: true, description: "Subreddit name (without r/)" }
-    rest:
-      method: GET
-      url: "https://www.reddit.com/r/{{params.subreddit}}/about.json"
-      headers:
-        User-Agent: "AgentOS/1.0"
-      response:
-        root: "/data"
-        mapping:
-          id: .name
-          name: .display_name
-          description: .public_description
-          url: ".display_name | prepend: 'https://reddit.com/r/'"
-          icon: .community_icon
-          member_count: .subscribers
-          member_count_numeric: .subscribers
-          privacy: "OPEN"
+      limit: { type: integer, default: 25, description: "Number of posts to include" }
+    command:
+      binary: bash
+      args:
+        - "-c"
+        - |
+          SUBREDDIT="{{params.subreddit}}"
+          LIMIT="{{params.limit | default:25}}"
+          
+          # Fetch subreddit metadata and posts
+          ABOUT=$(curl -s -A "AgentOS/1.0" "https://www.reddit.com/r/${SUBREDDIT}/about.json")
+          POSTS=$(curl -s -A "AgentOS/1.0" "https://www.reddit.com/r/${SUBREDDIT}/hot.json?limit=${LIMIT}")
+          
+          # Transform posts to entity format and combine with group metadata
+          echo "$ABOUT" | jq --argjson posts "$(echo "$POSTS" | jq '[.data.children[] | {
+            id: .data.id,
+            title: .data.title,
+            content: .data.selftext,
+            url: ("https://reddit.com" + .data.permalink),
+            author: { name: .data.author, url: ("https://reddit.com/u/" + .data.author) },
+            community: { name: .data.subreddit, url: ("https://reddit.com/r/" + .data.subreddit) },
+            engagement: { score: .data.score, comment_count: .data.num_comments },
+            published_at: (.data.created_utc | todate)
+          }]')" '
+          {
+            name: .data.name,
+            display_name: .data.display_name,
+            public_description: .data.public_description,
+            community_icon: .data.community_icon,
+            subscribers: .data.subscribers,
+            posts: $posts
+          }
+          '
+      timeout: 30
 
   group.search:
     description: Search for subreddits (communities)

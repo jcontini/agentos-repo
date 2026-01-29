@@ -126,100 +126,86 @@ export function GroupHeader({
   return (
     <div 
       className="stack" 
-      data-direction="vertical"
-      style={{ gap: '16px', padding: '16px' }}
+      data-direction="horizontal"
+      style={{ gap: '12px', padding: '12px', alignItems: 'center' }}
     >
-      {/* Top row: Icon + Info */}
+      {/* Compact avatar or initials */}
+      {showImage && (
+        <img
+          className="image"
+          data-variant="avatar"
+          data-size="md"
+          src={icon}
+          alt={name || 'Group'}
+          onError={() => setImageError(true)}
+        />
+      )}
+      {showInitials && (
+        <div
+          className="image image--initials"
+          data-variant="avatar"
+          data-size="md"
+          style={{ backgroundColor: getColorFromName(name) }}
+          role="img"
+          aria-label={name}
+        >
+          <span className="image__initials">{getInitials(name)}</span>
+        </div>
+      )}
+      
+      {/* Info: name + meta + description (compact) */}
       <div 
         className="stack" 
-        data-direction="horizontal"
-        style={{ gap: '16px', alignItems: 'flex-start' }}
+        data-direction="vertical"
+        style={{ gap: '2px', flex: 1, minWidth: 0 }}
       >
-        {/* Large avatar or initials */}
-        {showImage && (
-          <img
-            className="image"
-            data-variant="avatar"
-            data-size="xl"
-            src={icon}
-            alt={name || 'Group'}
-            onError={() => setImageError(true)}
-          />
-        )}
-        {showInitials && (
-          <div
-            className="image image--initials"
-            data-variant="avatar"
-            data-size="xl"
-            style={{ backgroundColor: getColorFromName(name) }}
-            role="img"
-            aria-label={name}
-          >
-            <span className="image__initials">{getInitials(name)}</span>
-          </div>
-        )}
-        
-        {/* Info: name + meta */}
+        {/* Name row with meta */}
         <div 
           className="stack" 
-          data-direction="vertical"
-          style={{ gap: '8px', flex: 1, minWidth: 0 }}
+          data-direction="horizontal"
+          style={{ gap: '8px', alignItems: 'baseline' }}
         >
-          {/* Name as heading (platform-aware) */}
-          {displayName && (
-            <span
+          {displayName && url ? (
+            <a
               className="text"
               data-variant="title"
-              data-size="xl"
-              data-weight="bold"
-              style={{ fontSize: '1.5rem', textDecoration: 'none', color: 'inherit' }}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: '1rem', fontWeight: 'bold' }}
+            >
+              {displayName}
+            </a>
+          ) : displayName && (
+            <span
+              className="text"
+              style={{ fontSize: '1rem', fontWeight: 'bold' }}
             >
               {displayName}
             </span>
           )}
           
-          {/* Meta: member count, privacy */}
-          <div 
-            className="stack" 
-            data-direction="horizontal"
-            style={{ gap: '8px', alignItems: 'center' }}
-          >
-            {displayMemberCount && (
-              <span className="text" data-variant="caption">
-                {displayMemberCount} members
-              </span>
-            )}
-            {displayMemberCount && privacyLabel && (
-              <span className="text" data-variant="caption">•</span>
-            )}
-            {privacyLabel && (
-              <span className="text" data-variant="caption">
-                {privacyLabel}
-              </span>
-            )}
-          </div>
+          {/* Inline meta */}
+          <span className="text" data-variant="caption">
+            {[displayMemberCount && `${displayMemberCount} members`, privacyLabel].filter(Boolean).join(' • ')}
+          </span>
         </div>
+        
+        {/* Description - single line truncated */}
+        {description && (
+          <span 
+            className="text" 
+            data-variant="caption"
+            style={{ 
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {description}
+          </span>
+        )}
       </div>
-      
-      {/* Description */}
-      {description && (
-        <span className="text" data-variant="body" style={{ lineHeight: 1.5 }}>
-          {description}
-        </span>
-      )}
-      
-      {/* Visit link */}
-      {url && (
-        <a
-          className="text"
-          data-variant="title"
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Visit Group →
-        </a>
-      )}
     </div>
   );
 }

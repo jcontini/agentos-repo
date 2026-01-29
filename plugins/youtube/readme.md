@@ -25,6 +25,7 @@ adapters:
     mapping:
       title: .title
       description: .description
+      transcript: .transcript
       duration_ms: ".duration | multiply:1000"
       thumbnail: .thumbnail
       creator_name: .channel
@@ -97,7 +98,8 @@ operations:
           # The adapter will map these to video entity properties
           echo "$METADATA" | jq --arg transcript "$TRANSCRIPT" '{
             title: .title,
-            description: $transcript,
+            description: .description,
+            transcript: $transcript,
             duration: .duration,
             thumbnail: .thumbnail,
             channel: .channel,
