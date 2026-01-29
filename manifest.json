@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated_at": "2026-01-28T00:34:59.796Z",
+  "updated_at": "2026-01-29T00:27:27.751Z",
   "plugins": [
     {
       "id": "apple-calendar",
@@ -8,11 +8,13 @@
       "description": "Access macOS Calendar via native EventKit APIs",
       "icon": "plugins/apple-calendar/icon.svg",
       "tags": [
-        "calendar"
+        "calendar",
+        "events",
+        "scheduling"
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.429Z"
+      "updated_at": "2026-01-29T00:27:18.769Z"
     },
     {
       "id": "brave",
@@ -25,7 +27,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.429Z"
+      "updated_at": "2026-01-29T00:27:18.769Z"
     },
     {
       "id": "curl",
@@ -33,11 +35,13 @@
       "description": "Simple URL fetching using curl (no API key needed)",
       "icon": "plugins/curl/icon.svg",
       "tags": [
-        "web"
+        "web",
+        "fetch",
+        "local"
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.429Z"
+      "updated_at": "2026-01-29T00:27:18.769Z"
     },
     {
       "id": "cursor",
@@ -49,7 +53,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.429Z"
+      "updated_at": "2026-01-29T00:27:18.769Z"
     },
     {
       "id": "exa",
@@ -58,11 +62,25 @@
       "icon": "plugins/exa/icon.svg",
       "tags": [
         "web",
-        "search"
+        "search",
+        "scraping"
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.429Z"
+      "updated_at": "2026-01-29T00:27:18.770Z"
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "description": "Query public Facebook group information without login",
+      "icon": "plugins/facebook/icon.svg",
+      "tags": [
+        "social",
+        "communities"
+      ],
+      "version": "1.0.0",
+      "author": "community",
+      "updated_at": "2026-01-29T00:27:18.770Z"
     },
     {
       "id": "firecrawl",
@@ -71,11 +89,12 @@
       "icon": "plugins/firecrawl/icon.svg",
       "tags": [
         "web",
-        "search"
+        "search",
+        "scraping"
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.429Z"
+      "updated_at": "2026-01-29T00:27:18.770Z"
     },
     {
       "id": "hardcover",
@@ -87,7 +106,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.430Z"
+      "updated_at": "2026-01-29T00:27:18.770Z"
     },
     {
       "id": "imessage",
@@ -100,7 +119,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.430Z"
+      "updated_at": "2026-01-29T00:27:18.770Z"
     },
     {
       "id": "instagram",
@@ -114,7 +133,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.430Z"
+      "updated_at": "2026-01-29T00:27:18.771Z"
     },
     {
       "id": "linear",
@@ -122,11 +141,13 @@
       "description": "Project management for engineering teams",
       "icon": "plugins/linear/icon.svg",
       "tags": [
-        "tasks"
+        "tasks",
+        "issues",
+        "projects"
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.430Z"
+      "updated_at": "2026-01-29T00:27:18.771Z"
     },
     {
       "id": "logo-dev",
@@ -139,7 +160,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.430Z"
+      "updated_at": "2026-01-29T00:27:18.771Z"
     },
     {
       "id": "mysql",
@@ -151,7 +172,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.431Z"
+      "updated_at": "2026-01-29T00:27:18.771Z"
     },
     {
       "id": "reddit",
@@ -160,11 +181,12 @@
       "icon": "plugins/reddit/icon.svg",
       "tags": [
         "social",
+        "reddit",
         "communities"
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.431Z"
+      "updated_at": "2026-01-29T00:27:18.771Z"
     },
     {
       "id": "sqlite",
@@ -176,7 +198,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.431Z"
+      "updated_at": "2026-01-29T00:27:18.771Z"
     },
     {
       "id": "todoist",
@@ -184,11 +206,13 @@
       "description": "Personal task management",
       "icon": "plugins/todoist/icon.svg",
       "tags": [
-        "tasks"
+        "tasks",
+        "todos",
+        "reminders"
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.431Z"
+      "updated_at": "2026-01-29T00:27:18.772Z"
     },
     {
       "id": "youtube",
@@ -201,7 +225,7 @@
       ],
       "version": "1.0.0",
       "author": "community",
-      "updated_at": "2026-01-28T00:34:48.431Z"
+      "updated_at": "2026-01-29T00:27:18.772Z"
     }
   ],
   "apps": [],
@@ -214,7 +238,7 @@
       "preview": "themes/os/macos9/preview.png",
       "version": "1.0.0",
       "author": "agentos",
-      "updated_at": "2026-01-28T00:34:48.434Z"
+      "updated_at": "2026-01-29T00:27:18.774Z"
     }
   ],
   "components": []
